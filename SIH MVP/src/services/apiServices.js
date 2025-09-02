@@ -1,9 +1,9 @@
 // Real-time API integration for comprehensive geofencing
 
 const API_KEYS = {
-  OPENWEATHER: 'your_openweather_api_key',
-  WAQI: 'your_waqi_api_key',
-  MAPBOX: 'pk.eyJ1IjoicHJpeWFuc2h1NjU5NCIsImEiOiJjbWV6cHhjbWoxMXV0MmxxeTg1b2Y3dHM5In0.VqvTmVZAFHF-2kX8R5A61Q'
+  OPENWEATHER: import.meta.env.VITE_OPENWEATHER_API_KEY || 'your_openweather_api_key',
+  WAQI: import.meta.env.VITE_WAQI_API_KEY || 'your_waqi_api_key',
+  MAPBOX: import.meta.env.VITE_MAPBOX_TOKEN
 }
 
 // Helper function to create geofence polygons around a point

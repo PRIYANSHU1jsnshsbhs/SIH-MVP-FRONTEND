@@ -290,10 +290,31 @@ The system is designed to integrate with emergency response services:
 
 ## 🔒 Security Considerations
 
+### API Key Protection
+- **All API keys** are stored in environment variables (`.env` file)
+- **Never commit** the `.env` file to version control
+- **Use `.env.example`** as a template for required environment variables
+- **Production deployment** should use secure environment variable management
+
+### Required Environment Variables
+```bash
+VITE_WEATHER_API_KEY=your_weather_api_key_here
+VITE_MAPBOX_TOKEN=your_mapbox_access_token_here
+```
+
+### Security Best Practices
 - **API key protection** through environment variables
-- **Rate limiting** for API requests
+- **Rate limiting** for API requests  
 - **Data sanitization** for user inputs
 - **Secure data transmission** over HTTPS
+- **Regular token rotation** for production systems
+- **Access logging** for API usage monitoring
+
+### Important Security Notes
+⚠️ **Never expose API keys in source code**  
+⚠️ **The `.env` file is ignored by git** to prevent accidental commits  
+⚠️ **Regenerate tokens** if accidentally exposed  
+⚠️ **Use different tokens** for development and production
 
 ## 🐛 Troubleshooting
 

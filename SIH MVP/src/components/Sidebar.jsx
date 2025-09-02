@@ -1,7 +1,7 @@
 import { useState, useContext, createContext } from "react"
 import { Home, Search, MapPin, Route, Shield, AlertTriangle, Navigation, Settings, ArrowLeft, LocateFixed } from "lucide-react"
 
-const MAPBOX_TOKEN = 'pk.eyJ1IjoicHJpeWFuc2h1NjU5NCIsImEiOiJjbWV6cHhjbWoxMXV0MmxxeTg1b2Y3dHM5In0.VqvTmVZAFHF-2kX8R5A61Q'
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
 const SidebarContext = createContext()
 
 export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggleRiskyAreas }) {

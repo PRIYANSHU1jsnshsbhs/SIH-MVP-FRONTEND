@@ -2,6 +2,8 @@ import { useState } from 'react'
 import Sidebar from './components/Sidebar'
 import Map from './components/Map'
 
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
+
 function App() {
   const [activeItem, setActiveItem] = useState("home")
   const [route, setRoute] = useState(null)

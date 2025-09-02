@@ -2,6 +2,11 @@
 const WEATHER_API_KEY = import.meta.env.VITE_WEATHER_API_KEY
 const WEATHER_BASE_URL = 'https://api.weatherapi.com/v1'
 
+// Environment validation
+if (!WEATHER_API_KEY) {
+  console.warn('⚠️ VITE_WEATHER_API_KEY not found. Weather data will be simulated.')
+}
+
 // MASSIVE city coverage - 200+ cities across ALL states/UTs
 const ALL_INDIAN_CITIES = [
   // Andhra Pradesh
