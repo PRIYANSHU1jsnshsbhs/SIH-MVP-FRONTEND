@@ -1,13 +1,22 @@
 {
-  "name": "sih-mvp",
+  "name": "sih-mvp-geofencing",
+  "description": "Comprehensive India Geofencing System - Real-time risk monitoring for Smart India Hackathon",
+  "version": "1.0.0",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "keywords": ["geofencing", "india", "smart-india-hackathon", "risk-monitoring", "react", "vite"],
+  "author": "PRIYANSHU1jsnshsbhs",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PRIYANSHU1jsnshsbhs/SIH-MVP-FRONTEND.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "npm run dev"
   },
   "dependencies": {
     "react": "^19.1.1",
