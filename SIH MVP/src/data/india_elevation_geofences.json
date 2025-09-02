@@ -1,0 +1,39 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.0, 28.5],
+          [77.18, 28.5],
+          [77.18, 28.68],
+          [77.0, 28.68],
+          [77.0, 28.5]
+        ]]
+      },
+      "properties": {
+        "risk": "elevation",
+        "elevation": 1200
+      }
+    },
+    {
+      "type": "Feature", 
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [78.0, 30.0],
+          [78.2, 30.0], 
+          [78.2, 30.2],
+          [78.0, 30.2],
+          [78.0, 30.0]
+        ]]
+      },
+      "properties": {
+        "risk": "elevation",
+        "elevation": 1500
+      }
+    }
+  ]
+}

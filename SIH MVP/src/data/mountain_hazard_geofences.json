@@ -1,0 +1,245 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.1, 32.3],
+          [77.25, 32.3],
+          [77.25, 32.45],
+          [77.1, 32.45],
+          [77.1, 32.3]
+        ]]
+      },
+      "properties": {
+        "risk": "mountain_hazard",
+        "name": "Rohtang Pass",
+        "elevation": 3978,
+        "hazards": ["landslides", "avalanches", "sudden weather"],
+        "severity": "high"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.8, 31.9],
+          [78.4, 31.9],
+          [78.4, 32.5],
+          [77.8, 32.5],
+          [77.8, 31.9]
+        ]]
+      },
+      "properties": {
+        "risk": "mountain_hazard",
+        "name": "Spiti Valley",
+        "elevation": 4270,
+        "hazards": ["high altitude", "rockfall", "extreme cold"],
+        "severity": "extreme"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [74.9, 33.0],
+          [75.0, 33.0],
+          [75.0, 33.1],
+          [74.9, 33.1],
+          [74.9, 33.0]
+        ]]
+      },
+      "properties": {
+        "risk": "mountain_hazard",
+        "name": "Vaishno Devi Trek Route",
+        "elevation": 1560,
+        "hazards": ["crowding", "steep paths", "weather"],
+        "severity": "medium"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [79.0, 30.7],
+          [79.1, 30.7],
+          [79.1, 30.8],
+          [79.0, 30.8],
+          [79.0, 30.7]
+        ]]
+      },
+      "properties": {
+        "risk": "mountain_hazard",
+        "name": "Kedarnath Route",
+        "elevation": 3583,
+        "hazards": ["flash floods", "landslides", "altitude sickness"],
+        "severity": "high"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [78.8, 30.0],
+          [79.2, 30.0],
+          [79.2, 30.4],
+          [78.8, 30.4],
+          [78.8, 30.0]
+        ]]
+      },
+      "properties": {
+        "risk": "mountain_hazard",
+        "name": "Valley of Flowers",
+        "elevation": 3658,
+        "hazards": ["sudden weather", "river crossings", "wildlife"],
+        "severity": "medium"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [76.5, 33.7],
+          [76.8, 33.7],
+          [76.8, 34.1],
+          [76.5, 34.1],
+          [76.5, 33.7]
+        ]]
+      },
+      "properties": {
+        "risk": "mountain_hazard",
+        "name": "Leh-Ladakh High Passes",
+        "elevation": 5359,
+        "hazards": ["altitude sickness", "avalanches", "extreme cold"],
+        "severity": "extreme"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.3, 31.1],
+          [77.5, 31.1],
+          [77.5, 31.3],
+          [77.3, 31.3],
+          [77.3, 31.1]
+        ]]
+      },
+      "properties": {
+        "risk": "mountain_hazard",
+        "name": "Shimla-Kinnaur Border",
+        "elevation": 3200,
+        "hazards": ["rockfall", "narrow roads", "landslides"],
+        "severity": "high"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [88.1, 27.9],
+          [88.3, 27.9],
+          [88.3, 28.1],
+          [88.1, 28.1],
+          [88.1, 27.9]
+        ]]
+      },
+      "properties": {
+        "risk": "mountain_hazard",
+        "name": "Darjeeling Hills",
+        "elevation": 2590,
+        "hazards": ["landslides", "fog", "steep terrain"],
+        "severity": "medium"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [76.0, 9.5],
+          [76.3, 9.5],
+          [76.3, 9.8],
+          [76.0, 9.8],
+          [76.0, 9.5]
+        ]]
+      },
+      "properties": {
+        "risk": "mountain_hazard",
+        "name": "Western Ghats - Munnar",
+        "elevation": 1600,
+        "hazards": ["monsoon landslides", "wildlife", "fog"],
+        "severity": "medium"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [79.1, 13.0],
+          [79.4, 13.0],
+          [79.4, 13.3],
+          [79.1, 13.3],
+          [79.1, 13.0]
+        ]]
+      },
+      "properties": {
+        "risk": "mountain_hazard",
+        "name": "Eastern Ghats - Tirumala",
+        "elevation": 853,
+        "hazards": ["crowding", "steep paths", "heat"],
+        "severity": "low"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [78.4, 32.2],
+          [78.7, 32.2],
+          [78.7, 32.5],
+          [78.4, 32.5],
+          [78.4, 32.2]
+        ]]
+      },
+      "properties": {
+        "risk": "mountain_hazard",
+        "name": "Lahaul Valley",
+        "elevation": 3340,
+        "hazards": ["avalanches", "river crossings", "isolation"],
+        "severity": "high"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [77.5, 30.0],
+          [77.8, 30.0],
+          [77.8, 30.3],
+          [77.5, 30.3],
+          [77.5, 30.0]
+        ]]
+      },
+      "properties": {
+        "risk": "mountain_hazard",
+        "name": "Gangotri Glacier",
+        "elevation": 4023,
+        "hazards": ["crevasses", "altitude sickness", "unstable terrain"],
+        "severity": "extreme"
+      }
+    }
+  ]
+}
