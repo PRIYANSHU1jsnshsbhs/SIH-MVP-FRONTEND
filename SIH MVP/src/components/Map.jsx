@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import mapboxgl from 'mapbox-gl'
 import StyleSwitchButton from './StyleSwitchButton'
+import MapNavigationControls from './MapNavigationControls'
 import { 
   fetchAllRealTimeGeofencesExtended,
   getRiskIcon,
@@ -90,13 +91,34 @@ const loadRealData = async () => {
   }
 }
 
-export default function Map({ activeItem, route, isNavigating, showRiskyAreas }) {
+export default function Map({ activeItem, route, isNavigating, showRiskyAreas, sidebarExpanded, onStopNavigation }) {
   console.log('🚀 Map component rendering with props:', { 
     activeItem, 
     hasRoute: !!route, 
     isNavigating, 
-    showRiskyAreas 
+    showRiskyAreas,
+    sidebarExpanded
   })
+
+  // Early safe fallback if Mapbox token is missing to prevent runtime crash/blank screen
+  if (!MAPBOX_TOKEN) {
+    return (
+      <div
+        className="w-full h-full flex items-center justify-center"
+        style={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh' }}
+      >
+        <div className="bg-white/95 backdrop-blur-sm border border-gray-200 shadow-xl rounded-xl p-6 text-center max-w-md">
+          <div className="text-2xl mb-2">🗺️ Map unavailable</div>
+          <div className="text-gray-700 mb-4">
+            Missing Mapbox token. Create a file named <code>.env</code> in the project root with:
+            <br />
+            <code>VITE_MAPBOX_TOKEN=your_mapbox_access_token_here</code>
+          </div>
+          <div className="text-sm text-gray-500">The rest of the UI will still work.</div>
+        </div>
+      </div>
+    )
+  }
 
   const mapContainer = useRef(null)
   const map = useRef(null)
@@ -343,8 +365,8 @@ export default function Map({ activeItem, route, isNavigating, showRiskyAreas })
           "line-cap": "round"
         },
         paint: {
-          "line-color": "#222",
-          "line-width": 6
+          "line-color": "#60a5fa", // Light blue color for better visibility
+          "line-width": 8 // Thicker line for better visibility
         }
       })
 
@@ -553,6 +575,94 @@ export default function Map({ activeItem, route, isNavigating, showRiskyAreas })
 
   }, [showRiskyAreas, geofenceData, styleVersion])
 
+  // Navigation control functions
+  const handleZoomIn = () => {
+    if (map.current) {
+      map.current.zoomIn()
+    }
+  }
+
+  const handleZoomOut = () => {
+    if (map.current) {
+      map.current.zoomOut()
+    }
+  }
+
+  const handleResetBearing = () => {
+    if (map.current) {
+      map.current.easeTo({ bearing: 0, pitch: 45 })
+    }
+  }
+
+  const handleFindLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords
+          if (map.current) {
+            map.current.flyTo({
+              center: [longitude, latitude],
+              zoom: 15
+            })
+            
+            // Add or update user location marker
+            if (liveMarkerRef.current) {
+              liveMarkerRef.current.remove()
+            }
+            liveMarkerRef.current = new mapboxgl.Marker({ color: '#3b82f6' })
+              .setLngLat([longitude, latitude])
+              .addTo(map.current)
+          }
+        },
+        (error) => {
+          console.error('Error getting location:', error)
+          alert('Unable to access your location. Please check your browser settings.')
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+      )
+    } else {
+      alert('Geolocation is not supported by this browser.')
+    }
+  }
+
+  const handleResetView = () => {
+    if (map.current) {
+      map.current.flyTo({
+        center: [78.9629, 20.5937],
+        zoom: 5,
+        bearing: 0,
+        pitch: 45
+      })
+    }
+  }
+
+  const handleStopNavigation = () => {
+    // Clear local route info
+    setRouteInfo(null)
+    
+    if (map.current) {
+      // Remove route layer and markers
+      if (map.current.getLayer(routeLayerId)) {
+        map.current.removeLayer(routeLayerId)
+      }
+      if (map.current.getSource(routeLayerId)) {
+        map.current.removeSource(routeLayerId)
+      }
+      if (startMarkerRef.current) {
+        startMarkerRef.current.remove()
+        startMarkerRef.current = null
+      }
+      if (endMarkerRef.current) {
+        endMarkerRef.current.remove()
+        endMarkerRef.current = null
+      }
+    }
+    // Call parent callback to update navigation state
+    if (onStopNavigation) {
+      onStopNavigation()
+    }
+  }
+
   return (
     <>
       {/* Full screen map container */}
@@ -568,30 +678,46 @@ export default function Map({ activeItem, route, isNavigating, showRiskyAreas })
         }}
       />
 
-      {/* Route Info Card */}
+      {/* Map Navigation Controls - Top right, below current view info */}
+      <MapNavigationControls
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onResetBearing={handleResetBearing}
+        onFindLocation={handleFindLocation}
+        onResetView={handleResetView}
+        sidebarExpanded={sidebarExpanded}
+      />
+
+      {/* Route Info Card - Back to original center position */}
       {routeInfo && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-gray-900/90 text-white rounded-xl shadow-lg px-6 py-3 z-20 flex flex-col items-center">
-          <div className="font-bold text-lg mb-1">Navigation Info</div>
-          <div className="text-sm">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-gray-900/90 text-white rounded-xl shadow-lg px-6 py-4 z-20 flex flex-col items-center">
+          <div className="font-bold text-lg mb-2">Navigation Info</div>
+          <div className="text-sm mb-1">
             <span className="font-semibold">Distance:</span> {(routeInfo.distance / 1000).toFixed(2)} km
           </div>
-          <div className="text-sm">
+          <div className="text-sm mb-3">
             <span className="font-semibold">Estimated Time:</span> {Math.round(routeInfo.duration / 60)} min
           </div>
+          <button
+            onClick={handleStopNavigation}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            Stop Navigation
+          </button>
         </div>
       )}
 
-      {/* Loading Indicator - Positioned Right */}
+      {/* Loading Indicator - Positioned Top Right with margin */}
       {isLoadingData && (
-        <div className="absolute top-4 right-4 bg-blue-600/90 text-white rounded-xl shadow-lg px-4 py-2 z-20 flex items-center">
+        <div className="absolute top-6 right-6 bg-blue-600/90 text-white rounded-xl shadow-lg px-4 py-2 z-20 flex items-center">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
           <span className="text-sm">Loading comprehensive data...</span>
         </div>
       )}
 
-      {/* Current View Info - Move to top-left when not loading */}
+      {/* Current View Info - Moved to top-right area */}
       {!isLoadingData && (
-        <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg z-10 border border-gray-200">
+        <div className="absolute top-6 right-6 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg z-10 border border-gray-200 transition-all duration-700">
           <p className="text-sm font-medium">
             Viewing: <span className="capitalize text-indigo-600">{activeItem}</span>
           </p>
@@ -608,13 +734,13 @@ export default function Map({ activeItem, route, isNavigating, showRiskyAreas })
         </div>
       )}
 
-      {/* Toggle Button - Bottom Right */}
-      <div className="absolute bottom-4 right-4 z-10">
+      {/* Toggle Button - Bottom Right with proper spacing */}
+      <div className={`absolute bottom-6 right-6 z-10 transition-all duration-700`}>
         <StyleSwitchButton onClick={handleSwitchStyle} isSatellite={isSatellite} />
       </div>
 
-      {/* Enhanced Legend with Crime Details */}
-      <div className="absolute bottom-20 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg z-10 max-h-96 overflow-y-auto">
+      {/* Enhanced Legend with Crime Details - Positioned in middle-right area */}
+      <div className={`absolute top-60 right-6 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg z-10 max-h-80 overflow-y-auto w-64 transition-all duration-700`}>
         <h4 className="font-semibold text-sm mb-3">
           🌍 Comprehensive Risk Map 
           {geofenceData && (

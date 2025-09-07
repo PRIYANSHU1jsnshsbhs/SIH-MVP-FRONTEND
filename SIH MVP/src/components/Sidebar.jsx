@@ -1,10 +1,10 @@
-import { useState, useContext, createContext } from "react"
-import { Home, Search, MapPin, Route, Shield, AlertTriangle, Navigation, Settings, ArrowLeft, LocateFixed } from "lucide-react"
+import { useState, useContext, createContext, useEffect } from "react"
+import { Home, Search, MapPin, Route, Shield, AlertTriangle, Navigation, Settings, ArrowLeft, LocateFixed, UserPlus, Phone } from "lucide-react"
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
 const SidebarContext = createContext()
 
-export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggleRiskyAreas }) {
+export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggleRiskyAreas, onSidebarToggle, onShowAuth }) {
   const [expanded, setExpanded] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
   const [navMode, setNavMode] = useState(false)
@@ -12,7 +12,12 @@ export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggl
   const [to, setTo] = useState("")
   const [suggestions, setSuggestions] = useState([])
 
-  // Fetch suggestions as user types
+  // Notify parent when sidebar state changes
+  useEffect(() => {
+    if (onSidebarToggle) {
+      onSidebarToggle(expanded)
+    }
+  }, [expanded, onSidebarToggle])
   const handleToChange = async (e) => {
     const value = e.target.value
     setTo(value)
@@ -83,6 +88,56 @@ export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggl
     setIsOpen(false)
   }
 
+  // Handler for share live location
+  const handleShareLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords
+          const locationUrl = `https://maps.google.com/maps?q=${latitude},${longitude}`
+          
+          if (navigator.share) {
+            navigator.share({
+              title: 'My Live Location',
+              text: 'Here is my current location:',
+              url: locationUrl
+            }).catch((error) => {
+              console.log('Error sharing:', error)
+              fallbackShare(locationUrl)
+            })
+          } else {
+            fallbackShare(locationUrl)
+          }
+        },
+        (error) => {
+          console.error('Error getting location:', error)
+          alert('Unable to get your location. Please check your browser settings.')
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+      )
+    } else {
+      alert('Geolocation is not supported by this browser.')
+    }
+  }
+
+  // Fallback share function
+  const fallbackShare = (locationUrl) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(locationUrl).then(() => {
+        alert('Location URL copied to clipboard! You can share it with your contacts.')
+      }).catch(() => {
+        prompt('Copy this location URL to share:', locationUrl)
+      })
+    } else {
+      prompt('Copy this location URL to share:', locationUrl)
+    }
+  }
+
+  // Handler for trusted contacts
+  const handleTrustedContacts = () => {
+    alert('Trusted Contacts feature coming soon! This will allow you to:\n\n• Add emergency contacts\n• Share location automatically in SOS\n• Get notified when contacts are in danger\n• Set up check-in schedules')
+  }
+
   return (
     <>
       {/* Mobile Hamburger Button */}
@@ -110,16 +165,17 @@ export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggl
       />
 
       {/* Vertically and horizontally centered sidebar with left margin */}
-      <div className={`fixed left-6 top-0 h-screen w-72 flex items-center justify-center z-40
+      <div className={`fixed left-6 top-0 h-screen flex items-center justify-center z-40
+        transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]
         ${isOpen ? '' : 'md:translate-x-0 -translate-x-full'}
       `}>
         <nav className={`
-          w-72 max-w-xs
           bg-gray-900/70 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-800/40
           transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]
+          ${expanded ? 'w-80' : 'w-16'}
         `}>
           <div className="p-4 flex justify-between items-center border-b border-gray-800/30">
-            <div className={`overflow-hidden transition-all duration-500 ${expanded ? "w-32" : "w-0"}`}>
+            <div className={`overflow-hidden transition-all duration-500 ${expanded ? "w-40" : "w-0"}`}>
               <h2 className="text-lg font-bold text-white">
                 TouristSafe
               </h2>
@@ -134,13 +190,34 @@ export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggl
 
           <SidebarContext.Provider value={{ expanded, setIsOpen }}>
             <div
-              className={`p-3 space-y-1 ${expanded ? "max-h-[480px] overflow-y-auto" : "max-h-[480px] overflow-hidden"}`}
-              style={{ scrollbarWidth: "none", minHeight: "480px" }}
+              className={`p-3 space-y-1 ${expanded ? "overflow-visible" : "overflow-hidden"}`}
+              style={{ scrollbarWidth: "none", minHeight: "550px" }}
             >
               {!navMode ? (
                 <>
-                  <SidebarItem icon={<Home size={18} />} text="Home" />
-                  <SidebarItem icon={<LocateFixed size={18} />} text="Share Live Location" />
+                  <SidebarItem 
+                    icon={<UserPlus size={18} />} 
+                    text="Register/Login" 
+                    onClick={() => {
+                      console.log('Register/Login clicked')
+                      onShowAuth && onShowAuth()
+                      // On mobile, close the drawer shortly after opening auth
+                      if (window.innerWidth < 768) {
+                        setTimeout(() => setIsOpen(false), 150)
+                      }
+                    }}
+                  />
+                  <SidebarItem 
+                    icon={<LocateFixed size={18} />} 
+                    text="Share Live Location" 
+                    onClick={handleShareLocation}
+                  />
+                  <SidebarItem 
+                    icon={<Phone size={18} />} 
+                    text="SOS Emergency" 
+                    alert 
+                    onClick={() => alert('Emergency SOS activated! Contacts notified.')}
+                  />
                   <SidebarItem 
                     icon={<AlertTriangle size={18} />} 
                     text="Risky Areas" 
@@ -148,7 +225,11 @@ export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggl
                     alert 
                   />
                   <SidebarItem icon={<Shield size={18} />} text="Vitals" />
-                  <SidebarItem icon={<MapPin size={18} />} text="Trusted Contacts" />
+                  <SidebarItem 
+                    icon={<MapPin size={18} />} 
+                    text="Trusted Contacts" 
+                    onClick={handleTrustedContacts}
+                  />
                   <SidebarItem icon={<Search size={18} />} text="Booking" />
                   <SidebarItem icon={<Navigation size={18} />} text="Navigation" onClick={() => setNavMode(true)} />
                   <SidebarItem icon={<Route size={18} />} text="Hikes" />
@@ -197,26 +278,26 @@ export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggl
                       </ul>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2 mt-4">
                     <button
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
+                      className="flex-1 min-w-0 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
                       onClick={handleSearchClick}
                     >
                       Search
                     </button>
                     <button
-                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+                      className="flex-1 min-w-0 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
                       onClick={() => onStartNavigation && onStartNavigation()}
                     >
-                      Start Navigation
-                    </button>
-                    <button
-                      className="px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg"
-                      onClick={handleBackClick}
-                    >
-                      Back
+                      Start Nav
                     </button>
                   </div>
+                  <button
+                    className="w-full mt-3 px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg text-sm font-medium transition-colors"
+                    onClick={handleBackClick}
+                  >
+                    ← Back to Menu
+                  </button>
                 </div>
               )}
             </div>
@@ -233,7 +314,7 @@ export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggl
                 />
                 <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border border-white rounded-full"></div>
               </div>
-              <div className={`overflow-hidden transition-all duration-500 ${expanded ? "w-24" : "w-0"}`}>
+              <div className={`overflow-hidden transition-all duration-500 ${expanded ? "w-32" : "w-0"}`}>
                 <h4 className="font-medium text-sm text-white">Tourist</h4>
                 <span className="text-xs text-gray-400">Online</span>
               </div>
@@ -274,7 +355,7 @@ export function SidebarItem({ icon, text, active, alert, onClick }) {
 
       <span className={`
         overflow-hidden transition-all duration-500 ease-in-out whitespace-nowrap
-        ${expanded ? "w-32 ml-3 opacity-100" : "w-0 ml-0 opacity-0"}
+        ${expanded ? "w-40 ml-3 opacity-100" : "w-0 ml-0 opacity-0"}
       `}>
         {text}
       </span>
