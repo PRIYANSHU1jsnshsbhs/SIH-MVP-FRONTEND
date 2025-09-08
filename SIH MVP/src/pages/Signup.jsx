@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
 
@@ -10,6 +11,7 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,6 +25,7 @@ const Signup = () => {
         { withCredentials: true }
       );
       setSuccess(res.data.message);
+      setTimeout(() => navigate("/login"), 1200);
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
     } finally {

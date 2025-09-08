@@ -59,8 +59,6 @@ const CompleteYourProfile = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const userId = localStorage.getItem("userId");
-
   const handleChange = (e, path) => {
     const value = e.target.value;
     setForm((prev) => {
@@ -80,10 +78,15 @@ const CompleteYourProfile = () => {
     setError("");
     setSuccess("");
     try {
-      const res = await axios.post("http://localhost:8080/api/auth/complete-profile", {
-        userId,
-        ...form,
-      }, { withCredentials: true });
+      const token = localStorage.getItem("token");
+      const res = await axios.post(
+        "http://localhost:8080/api/auth/complete-profile",
+        { ...form },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        }
+      );
       setSuccess(res.data.message);
     } catch (err) {
       setError(err.response?.data?.message || "Profile update failed");
@@ -372,70 +375,68 @@ const CompleteYourProfile = () => {
             {loading ? "Saving..." : "Complete Profile"}
           </motion.button>
         </form>
-
-       
       </motion.div>
-       {/* DEV ONLY: Autofill sample data button */}
-        {process.env.NODE_ENV !== "production" && (
-          <button
-            type="button"
-            className="fixed bottom-8 right-8 z-50 px-5 py-3 bg-pink-600 text-white rounded-full shadow-lg hover:bg-pink-700 transition-all duration-200"
-            onClick={() =>
-              setForm({
-                personal_info: {
-                  first_name: "John",
-                  last_name: "Doe",
-                  dob: "1990-05-15",
-                  gender: "Male",
-                  nationality: "US",
-                  contact: {
-                    email: "john.doe@example.com",
-                    phone_number: "+1-555-123-4567",
-                  },
+      {/* DEV ONLY: Autofill sample data button */}
+      {process.env.NODE_ENV !== "production" && (
+        <button
+          type="button"
+          className="fixed bottom-8 right-8 z-50 px-5 py-3 bg-pink-600 text-white rounded-full shadow-lg hover:bg-pink-700 transition-all duration-200"
+          onClick={() =>
+            setForm({
+              personal_info: {
+                first_name: "John",
+                last_name: "Doe",
+                dob: "1990-05-15",
+                gender: "Male",
+                nationality: "US",
+                contact: {
+                  email: "john.doe@example.com",
+                  phone_number: "+1-555-123-4567",
                 },
-                documents: {
-                  passport: {
-                    number: "P1234567",
-                    issue_date: "2020-01-20",
-                    expiry_date: "2030-01-19",
-                    issuing_country: "US",
-                  },
-                  visa: {
-                    type: "Tourist",
-                    expiry_date: "2026-03-30",
-                  },
+              },
+              documents: {
+                passport: {
+                  number: "P1234567",
+                  issue_date: "2020-01-20",
+                  expiry_date: "2030-01-19",
+                  issuing_country: "US",
                 },
-                addresses: {
-                  permanent: {
-                    street: "123 Main St",
-                    city: "Springfield",
-                    state: "IL",
-                    postal_code: "62701",
-                    country: "US",
-                  },
-                  in_india: {
-                    street: "45/A Karol Bagh",
-                    city: "New Delhi",
-                    state: "Delhi",
-                    postal_code: "110005",
-                  },
+                visa: {
+                  type: "Tourist",
+                  expiry_date: "2026-03-30",
                 },
-                emergency_contact: {
-                  name: "Jane Doe",
-                  relationship: "Spouse",
-                  phone_number: "+1-555-987-6543",
+              },
+              addresses: {
+                permanent: {
+                  street: "123 Main St",
+                  city: "Springfield",
+                  state: "IL",
+                  postal_code: "62701",
+                  country: "US",
                 },
-                travel_details: {
-                  purpose_of_visit: "Vacation",
-                  arrival_date: "2025-09-08",
-                  departure_date: "2025-09-22",
+                in_india: {
+                  street: "45/A Karol Bagh",
+                  city: "New Delhi",
+                  state: "Delhi",
+                  postal_code: "110005",
                 },
-              })
-            }
-          >
-            Fill Sample Data
-          </button>
-        )}
+              },
+              emergency_contact: {
+                name: "Jane Doe",
+                relationship: "Spouse",
+                phone_number: "+1-555-987-6543",
+              },
+              travel_details: {
+                purpose_of_visit: "Vacation",
+                arrival_date: "2025-09-08",
+                departure_date: "2025-09-22",
+              },
+            })
+          }
+        >
+          Fill Sample Data
+        </button>
+      )}
     </div>
   );
 };

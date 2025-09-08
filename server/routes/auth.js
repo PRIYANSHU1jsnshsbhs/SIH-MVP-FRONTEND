@@ -19,7 +19,11 @@ function authMiddleware(req, res, next) {
 
 router.post("/register", authController.register);
 router.post("/login", authController.login);
-router.post("/complete-profile", authController.completeProfile);
+router.post(
+  "/complete-profile",
+  authMiddleware,
+  authController.completeProfile
+);
 router.get("/me", authMiddleware, authController.getMe);
 
 module.exports = router;

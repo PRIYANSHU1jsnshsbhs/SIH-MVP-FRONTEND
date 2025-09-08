@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
 
@@ -8,6 +9,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,9 +17,13 @@ const Login = () => {
     setError("");
     setSuccess("");
     try {
-      const res = await axios.post("http://localhost:8080/api/auth/login", { email, password });
+      const res = await axios.post("http://localhost:8080/api/auth/login", {
+        email,
+        password,
+      });
       setSuccess(res.data.message);
       localStorage.setItem("token", res.data.token);
+      setTimeout(() => navigate("/complete-your-profile"), 1200);
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     } finally {
