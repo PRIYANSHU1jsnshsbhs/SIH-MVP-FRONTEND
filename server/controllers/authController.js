@@ -35,15 +35,41 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 exports.completeProfile = async (req, res) => {
-  const userId = req.userId || req.body.userId; // userId from JWT or body
-  const profileData = req.body;
+  const userId = req.userId; // Only use userId from JWT middleware
+  const profileData = { ...req.body };
   if (!userId) {
-    return res.status(400).json({ message: "User ID required." });
+    return res
+      .status(401)
+      .json({ message: "Unauthorized. No user ID from token." });
   }
+  // Remove fields that should not be updated
+  delete profileData._id;
+  delete profileData.password;
+  delete profileData.email;
+
+  // Flatten nested objects for MongoDB dot notation
+  function flatten(obj, prefix = "") {
+    return Object.keys(obj).reduce((acc, k) => {
+      const pre = prefix.length ? prefix + "." : "";
+      if (
+        typeof obj[k] === "object" &&
+        obj[k] !== null &&
+        !Array.isArray(obj[k])
+      ) {
+        Object.assign(acc, flatten(obj[k], pre + k));
+      } else {
+        acc[pre + k] = obj[k];
+      }
+      return acc;
+    }, {});
+  }
+  const updateData = flatten(profileData);
+  updateData.updated_at = new Date();
+
   try {
     const user = await User.findByIdAndUpdate(
       userId,
-      { ...profileData, updated_at: new Date() },
+      { $set: updateData },
       { new: true }
     );
     if (!user) {
@@ -51,7 +77,8 @@ exports.completeProfile = async (req, res) => {
     }
     res.json({ message: "Profile updated successfully.", user });
   } catch (err) {
-    res.status(500).json({ message: "Server error." });
+    console.error("Profile update error:", err);
+    res.status(500).json({ message: "Server error.", error: err.message });
   }
 };
 
