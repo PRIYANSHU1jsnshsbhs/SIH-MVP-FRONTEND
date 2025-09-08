@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
 
@@ -58,6 +59,7 @@ const CompleteYourProfile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const navigate = useNavigate();
 
   const handleChange = (e, path) => {
     const value = e.target.value;
@@ -88,6 +90,7 @@ const CompleteYourProfile = () => {
         }
       );
       setSuccess(res.data.message);
+      setTimeout(() => navigate("/"), 1200);
     } catch (err) {
       setError(err.response?.data?.message || "Profile update failed");
     } finally {
