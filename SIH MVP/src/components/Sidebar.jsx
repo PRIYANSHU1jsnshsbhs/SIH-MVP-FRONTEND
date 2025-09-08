@@ -1,142 +1,184 @@
-import { useState, useContext, createContext, useEffect } from "react"
-import { Home, Search, MapPin, Route, Shield, AlertTriangle, Navigation, Settings, ArrowLeft, LocateFixed, UserPlus, Phone } from "lucide-react"
+import { useState, useContext, createContext, useEffect } from "react";
+import {
+  Home,
+  Search,
+  MapPin,
+  Route,
+  Shield,
+  AlertTriangle,
+  Navigation,
+  Settings,
+  ArrowLeft,
+  LocateFixed,
+  UserPlus,
+  Phone,
+  LogOut,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
-const SidebarContext = createContext()
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+const SidebarContext = createContext();
 
-export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggleRiskyAreas, onSidebarToggle, onShowAuth }) {
-  const [expanded, setExpanded] = useState(true)
-  const [isOpen, setIsOpen] = useState(false)
-  const [navMode, setNavMode] = useState(false)
-  const [from, setFrom] = useState("")
-  const [to, setTo] = useState("")
-  const [suggestions, setSuggestions] = useState([])
+export default function Sidebar({
+  onNavigationSearch,
+  onStartNavigation,
+  onToggleRiskyAreas,
+  onSidebarToggle,
+  onShowAuth,
+}) {
+  const navigate = useNavigate();
+  // Logout handler
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+  const [expanded, setExpanded] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
+  const [navMode, setNavMode] = useState(false);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
 
   // Notify parent when sidebar state changes
   useEffect(() => {
     if (onSidebarToggle) {
-      onSidebarToggle(expanded)
+      onSidebarToggle(expanded);
     }
-  }, [expanded, onSidebarToggle])
+  }, [expanded, onSidebarToggle]);
   const handleToChange = async (e) => {
-    const value = e.target.value
-    setTo(value)
+    const value = e.target.value;
+    setTo(value);
     if (value.length > 2) {
       const resp = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(value)}.json?autocomplete=true&limit=5&access_token=${MAPBOX_TOKEN}`
-      )
-      const data = await resp.json()
-      setSuggestions(data.features || [])
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+          value
+        )}.json?autocomplete=true&limit=5&access_token=${MAPBOX_TOKEN}`
+      );
+      const data = await resp.json();
+      setSuggestions(data.features || []);
     } else {
-      setSuggestions([])
+      setSuggestions([]);
     }
-  }
+  };
 
   // When a suggestion is clicked
   const handleSuggestionClick = (feature) => {
-    setTo(feature.place_name)
-    setSuggestions([])
+    setTo(feature.place_name);
+    setSuggestions([]);
     if (from && onNavigationSearch) {
-      onNavigationSearch(from, `${feature.center[1]},${feature.center[0]}`)
+      onNavigationSearch(from, `${feature.center[1]},${feature.center[0]}`);
     }
-  }
+  };
 
   // Handler for using current location
   const handleUseCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setFrom(`${pos.coords.latitude},${pos.coords.longitude}`)
+          setFrom(`${pos.coords.latitude},${pos.coords.longitude}`);
         },
         () => {
-          alert("Unable to fetch location.")
+          alert("Unable to fetch location.");
         }
-      )
+      );
     } else {
-      alert("Geolocation not supported.")
+      alert("Geolocation not supported.");
     }
-  }
+  };
 
   // Handler for search button
   const handleSearchClick = async () => {
     if (from && to && onNavigationSearch) {
       // If "to" is already coordinates, use it
       if (/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(to)) {
-        onNavigationSearch(from, to)
+        onNavigationSearch(from, to);
       } else {
         // Otherwise, geocode "to"
         const resp = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(to)}.json?limit=1&access_token=${MAPBOX_TOKEN}`
-        )
-        const data = await resp.json()
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+            to
+          )}.json?limit=1&access_token=${MAPBOX_TOKEN}`
+        );
+        const data = await resp.json();
         if (data.features && data.features.length > 0) {
-          const [lng, lat] = data.features[0].center
-          onNavigationSearch(from, `${lat},${lng}`)
+          const [lng, lat] = data.features[0].center;
+          onNavigationSearch(from, `${lat},${lng}`);
         } else {
-          alert("Destination not found.")
+          alert("Destination not found.");
         }
       }
     }
-  }
+  };
 
   // Handler for back button
   const handleBackClick = () => {
-    setNavMode(false)
-    setFrom("")
-    setTo("")
-    setSuggestions([])
-    setIsOpen(false)
-  }
+    setNavMode(false);
+    setFrom("");
+    setTo("");
+    setSuggestions([]);
+    setIsOpen(false);
+  };
 
   // Handler for share live location
   const handleShareLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const { latitude, longitude } = position.coords
-          const locationUrl = `https://maps.google.com/maps?q=${latitude},${longitude}`
-          
+          const { latitude, longitude } = position.coords;
+          const locationUrl = `https://maps.google.com/maps?q=${latitude},${longitude}`;
+
           if (navigator.share) {
-            navigator.share({
-              title: 'My Live Location',
-              text: 'Here is my current location:',
-              url: locationUrl
-            }).catch((error) => {
-              console.log('Error sharing:', error)
-              fallbackShare(locationUrl)
-            })
+            navigator
+              .share({
+                title: "My Live Location",
+                text: "Here is my current location:",
+                url: locationUrl,
+              })
+              .catch((error) => {
+                console.log("Error sharing:", error);
+                fallbackShare(locationUrl);
+              });
           } else {
-            fallbackShare(locationUrl)
+            fallbackShare(locationUrl);
           }
         },
         (error) => {
-          console.error('Error getting location:', error)
-          alert('Unable to get your location. Please check your browser settings.')
+          console.error("Error getting location:", error);
+          alert(
+            "Unable to get your location. Please check your browser settings."
+          );
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-      )
+      );
     } else {
-      alert('Geolocation is not supported by this browser.')
+      alert("Geolocation is not supported by this browser.");
     }
-  }
+  };
 
   // Fallback share function
   const fallbackShare = (locationUrl) => {
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(locationUrl).then(() => {
-        alert('Location URL copied to clipboard! You can share it with your contacts.')
-      }).catch(() => {
-        prompt('Copy this location URL to share:', locationUrl)
-      })
+      navigator.clipboard
+        .writeText(locationUrl)
+        .then(() => {
+          alert(
+            "Location URL copied to clipboard! You can share it with your contacts."
+          );
+        })
+        .catch(() => {
+          prompt("Copy this location URL to share:", locationUrl);
+        });
     } else {
-      prompt('Copy this location URL to share:', locationUrl)
+      prompt("Copy this location URL to share:", locationUrl);
     }
-  }
+  };
 
   // Handler for trusted contacts
   const handleTrustedContacts = () => {
-    alert('Trusted Contacts feature coming soon! This will allow you to:\n\n• Add emergency contacts\n• Share location automatically in SOS\n• Get notified when contacts are in danger\n• Set up check-in schedules')
-  }
+    alert(
+      "Trusted Contacts feature coming soon! This will allow you to:\n\n• Add emergency contacts\n• Share location automatically in SOS\n• Get notified when contacts are in danger\n• Set up check-in schedules"
+    );
+  };
 
   return (
     <>
@@ -148,37 +190,47 @@ export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggl
           bg-gray-900/80 text-white
           hover:bg-gray-800/90
           transition-transform duration-300 ease-in-out transform hover:scale-110
-          ${isOpen ? 'rotate-90' : 'rotate-0'}
+          ${isOpen ? "rotate-90" : "rotate-0"}
         `}
       >
         {isOpen ? <ArrowLeft size={20} /> : <Home size={20} />}
       </button>
 
       {/* Mobile Backdrop */}
-      <div 
+      <div
         className={`
           md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30
           transition-all duration-500 ease-in-out
-          ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}
+          ${
+            isOpen
+              ? "opacity-100 visible"
+              : "opacity-0 invisible pointer-events-none"
+          }
         `}
         onClick={() => setIsOpen(false)}
       />
 
       {/* Vertically and horizontally centered sidebar with left margin */}
-      <div className={`fixed left-6 top-0 h-screen flex items-center justify-center z-40
+      <div
+        className={`fixed left-6 top-0 h-screen flex items-center justify-center z-40
         transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-        ${isOpen ? '' : 'md:translate-x-0 -translate-x-full'}
-      `}>
-        <nav className={`
+        ${isOpen ? "" : "md:translate-x-0 -translate-x-full"}
+      `}
+      >
+        <nav
+          className={`
           bg-gray-900/70 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-800/40
           transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-          ${expanded ? 'w-80' : 'w-16'}
-        `}>
+          ${expanded ? "w-80" : "w-16"}
+        `}
+        >
           <div className="p-4 flex justify-between items-center border-b border-gray-800/30">
-            <div className={`overflow-hidden transition-all duration-500 ${expanded ? "w-40" : "w-0"}`}>
-              <h2 className="text-lg font-bold text-white">
-                TouristSafe
-              </h2>
+            <div
+              className={`overflow-hidden transition-all duration-500 ${
+                expanded ? "w-40" : "w-0"
+              }`}
+            >
+              <h2 className="text-lg font-bold text-white">TouristSafe</h2>
             </div>
             <button
               onClick={() => setExpanded((curr) => !curr)}
@@ -190,48 +242,49 @@ export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggl
 
           <SidebarContext.Provider value={{ expanded, setIsOpen }}>
             <div
-              className={`p-3 space-y-1 ${expanded ? "overflow-visible" : "overflow-hidden"}`}
+              className={`p-3 space-y-1 ${
+                expanded ? "overflow-visible" : "overflow-hidden"
+              }`}
               style={{ scrollbarWidth: "none", minHeight: "550px" }}
             >
               {!navMode ? (
                 <>
-                  <SidebarItem 
-                    icon={<UserPlus size={18} />} 
-                    text="Register/Login" 
-                    onClick={() => {
-                      console.log('Register/Login clicked')
-                      onShowAuth && onShowAuth()
-                      // On mobile, close the drawer shortly after opening auth
-                      if (window.innerWidth < 768) {
-                        setTimeout(() => setIsOpen(false), 150)
-                      }
-                    }}
-                  />
-                  <SidebarItem 
-                    icon={<LocateFixed size={18} />} 
-                    text="Share Live Location" 
+                  <SidebarItem
+                    icon={<LocateFixed size={18} />}
+                    text="Share Live Location"
                     onClick={handleShareLocation}
                   />
-                  <SidebarItem 
-                    icon={<Phone size={18} />} 
-                    text="SOS Emergency" 
-                    alert 
-                    onClick={() => alert('Emergency SOS activated! Contacts notified.')}
+                  <SidebarItem
+                    icon={<Phone size={18} />}
+                    text="SOS Emergency"
+                    alert
+                    onClick={() =>
+                      alert("Emergency SOS activated! Contacts notified.")
+                    }
                   />
-                  <SidebarItem 
-                    icon={<AlertTriangle size={18} />} 
-                    text="Risky Areas" 
+                  <SidebarItem
+                    icon={<AlertTriangle size={18} />}
+                    text="Risky Areas"
                     onClick={onToggleRiskyAreas}
-                    alert 
+                    alert
                   />
                   <SidebarItem icon={<Shield size={18} />} text="Vitals" />
-                  <SidebarItem 
-                    icon={<MapPin size={18} />} 
-                    text="Trusted Contacts" 
+                  <SidebarItem
+                    icon={<MapPin size={18} />}
+                    text="Trusted Contacts"
                     onClick={handleTrustedContacts}
                   />
                   <SidebarItem icon={<Search size={18} />} text="Booking" />
-                  <SidebarItem icon={<Navigation size={18} />} text="Navigation" onClick={() => setNavMode(true)} />
+                  <SidebarItem
+                    icon={<Navigation size={18} />}
+                    text="Navigation"
+                    onClick={() => setNavMode(true)}
+                  />
+                  <SidebarItem
+                    icon={<LogOut size={18} />}
+                    text="Logout"
+                    onClick={handleLogout}
+                  />
                   <SidebarItem icon={<Route size={18} />} text="Hikes" />
                   <SidebarItem icon={<Settings size={18} />} text="Settings" />
                 </>
@@ -242,7 +295,7 @@ export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggl
                     <input
                       type="text"
                       value={from}
-                      onChange={e => setFrom(e.target.value)}
+                      onChange={(e) => setFrom(e.target.value)}
                       className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none"
                       placeholder="Enter starting point"
                     />
@@ -304,7 +357,8 @@ export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggl
           </SidebarContext.Provider>
 
           {/* User Profile */}
-          <div className="border-t border-gray-800/30 p-3">
+          <a href="/profile" className="">
+              <div className="border-t border-gray-800/30 p-3">
             <div className="flex items-center space-x-2">
               <div className="relative">
                 <img
@@ -314,27 +368,32 @@ export default function Sidebar({ onNavigationSearch, onStartNavigation, onToggl
                 />
                 <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border border-white rounded-full"></div>
               </div>
-              <div className={`overflow-hidden transition-all duration-500 ${expanded ? "w-32" : "w-0"}`}>
+              <div
+                className={`overflow-hidden transition-all duration-500 ${
+                  expanded ? "w-32" : "w-0"
+                }`}
+              >
                 <h4 className="font-medium text-sm text-white">Tourist</h4>
                 <span className="text-xs text-gray-400">Online</span>
               </div>
             </div>
           </div>
+          </a>
         </nav>
       </div>
     </>
-  )
+  );
 }
 
 export function SidebarItem({ icon, text, active, alert, onClick }) {
-  const { expanded, setIsOpen } = useContext(SidebarContext)
+  const { expanded, setIsOpen } = useContext(SidebarContext);
 
   const handleClick = () => {
-    if (onClick) onClick()
+    if (onClick) onClick();
     if (window.innerWidth < 768) {
-      setTimeout(() => setIsOpen(false), 150)
+      setTimeout(() => setIsOpen(false), 150);
     }
-  }
+  };
 
   return (
     <li
@@ -342,46 +401,57 @@ export function SidebarItem({ icon, text, active, alert, onClick }) {
         relative flex items-center py-2 px-3 my-0.5
         font-medium rounded-lg cursor-pointer group
         transition-all duration-300 ease-in-out transform hover:scale-[1.02]
-        ${active
-          ? "bg-gray-800/80 text-white shadow-md"
-          : "hover:bg-gray-800/60 text-gray-200 hover:text-white"
+        ${
+          active
+            ? "bg-gray-800/80 text-white shadow-md"
+            : "hover:bg-gray-800/60 text-gray-200 hover:text-white"
         }
       `}
       onClick={handleClick}
     >
-      <div className={`transition-all duration-300 flex-shrink-0 ${active ? "text-white" : "text-gray-400"}`}>
+      <div
+        className={`transition-all duration-300 flex-shrink-0 ${
+          active ? "text-white" : "text-gray-400"
+        }`}
+      >
         {icon}
       </div>
 
-      <span className={`
+      <span
+        className={`
         overflow-hidden transition-all duration-500 ease-in-out whitespace-nowrap
         ${expanded ? "w-40 ml-3 opacity-100" : "w-0 ml-0 opacity-0"}
-      `}>
+      `}
+      >
         {text}
       </span>
 
       {/* Alert indicator */}
       {alert && (
-        <div className={`
+        <div
+          className={`
           absolute w-2 h-2 bg-red-400 rounded-full
           animate-pulse transition-all duration-300
           ${expanded ? "right-2" : "right-1 top-1"}
-        `} />
+        `}
+        />
       )}
 
       {/* Tooltip for collapsed state */}
       {!expanded && (
-        <div className="
+        <div
+          className="
           absolute left-full ml-2 px-2 py-1 rounded-md
           bg-gray-900 text-white text-xs font-medium
           opacity-0 invisible group-hover:opacity-100 group-hover:visible
           transition-all duration-300 ease-in-out transform translate-x-1 group-hover:translate-x-0
           whitespace-nowrap z-50 shadow-lg
-        ">
+        "
+        >
           {text}
           <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
         </div>
       )}
     </li>
-  )
+  );
 }

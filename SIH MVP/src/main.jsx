@@ -7,6 +7,7 @@ import "./index.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import CompleteYourProfile from "./pages/CompleteYourProfile.jsx";
 import { useAuthGuard } from "./hooks/useAuthGuard";
+import Profile from "./pages/Profile.jsx";
 
 function ProtectedRoutes() {
   const { checking } = useAuthGuard();
@@ -18,6 +19,7 @@ function ProtectedRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signin />} />
       <Route path="/complete-your-profile" element={<CompleteYourProfile />} />
+      <Route path="/profile" element={<Profile />} />
     </Routes>
   );
 }
