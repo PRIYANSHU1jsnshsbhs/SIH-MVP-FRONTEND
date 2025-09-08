@@ -26,6 +26,7 @@
     "start": "npm run dev"
   },
   "dependencies": {
+    "framer-motion": "^12.23.12",
     "lucide-react": "^0.542.0",
     "mapbox-gl": "^3.14.0",
     "react": "^19.1.1",
