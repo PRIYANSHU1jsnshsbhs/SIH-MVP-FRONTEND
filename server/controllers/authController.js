@@ -2,6 +2,27 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+exports.completeProfile = async (req, res) => {
+  const userId = req.userId || req.body.userId; // userId from JWT or body
+  const profileData = req.body;
+  if (!userId) {
+    return res.status(400).json({ message: "User ID required." });
+  }
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { ...profileData, updated_at: new Date() },
+      { new: true }
+    );
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    res.json({ message: "Profile updated successfully.", user });
+  } catch (err) {
+    res.status(500).json({ message: "Server error." });
+  }
+};
+
 exports.register = async (req, res) => {
   const { name, email, phone, password } = req.body;
   if (!name || !email || !phone || !password) {
