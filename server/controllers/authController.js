@@ -1,3 +1,34 @@
+// Helper to check if profile is complete
+function isProfileComplete(user) {
+  if (
+    !user.personal_info ||
+    !user.personal_info.first_name ||
+    !user.personal_info.last_name ||
+    !user.personal_info.dob ||
+    !user.personal_info.gender ||
+    !user.personal_info.nationality ||
+    !user.personal_info.contact?.email ||
+    !user.personal_info.contact?.phone_number
+  )
+    return false;
+  // Add more checks as needed for required fields
+  return true;
+}
+
+exports.getMe = async (req, res) => {
+  try {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({
+      user,
+      profileComplete: isProfileComplete(user),
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
