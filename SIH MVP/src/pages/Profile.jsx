@@ -3,31 +3,200 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, User } from "lucide-react";
+import QRCodeDisplay from "../components/QRCodeDisplay";
+import { touristService } from "../services/touristService";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [nftData, setNftData] = useState(null);
+  const [loadingNFT, setLoadingNFT] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchProfile() {
       setLoading(true);
       setError("");
+      const token = localStorage.getItem("token");
+
+      // Immediate UI fill: use last submitted profile if present
       try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:8080/api/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUser(res.data.user);
+        const submitted = localStorage.getItem('submittedProfile');
+        const digitalIdLS = localStorage.getItem('digitalId');
+        if (submitted) {
+          const p = JSON.parse(submitted);
+          const immediateUser = {
+            personal_info: {
+              first_name: p?.personal_info?.first_name || '',
+              last_name: p?.personal_info?.last_name || '',
+              nationality: p?.personal_info?.nationality || '',
+              contact: p?.contact || p?.personal_info?.contact
+            },
+            contact: p?.contact || p?.personal_info?.contact,
+            documents: p?.documents || {},
+            addresses: p?.addresses || {},
+            emergency_contact: p?.emergency_contact || {},
+            travel_details: p?.travel_details || {},
+            digitalId: digitalIdLS
+          };
+          setUser(immediateUser);
+          await loadNFTData();
+          // Continue to refresh from backend or blockchain below
+        }
+      } catch {}
+
+      // Helper: map blockchain profile to UI shape expected by this component
+      const mapBlockchainProfileToUser = (profile) => {
+        if (!profile) return null;
+        const nameParts = (profile.name || "").split(" ");
+        const first_name = profile.first_name || nameParts[0] || "";
+        const last_name = profile.last_name || nameParts.slice(1).join(" ") || "";
+        return {
+          personal_info: {
+            first_name,
+            last_name,
+            nationality: profile.nationality || "",
+            contact: undefined, // kept for compatibility below
+          },
+          // Provide a top-level contact like backend structure might do
+          contact: {
+            email: profile.email || "",
+            phone_number: profile.phone || "",
+          },
+          documents: {
+            passport: {
+              number: profile.passportNumber || "",
+              issue_date: "",
+              expiry_date: "",
+              issuing_country: "",
+            },
+            visa: {
+              type: "",
+              expiry_date: "",
+            },
+          },
+          addresses: {
+            permanent: {},
+            in_india: {},
+          },
+          emergency_contact: {},
+          travel_details: {},
+        };
+      };
+
+  try {
+        // Try traditional backend first
+        if (token) {
+          const res = await axios.get("http://localhost:8080/api/auth/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res?.data?.user) {
+            setUser(res.data.user);
+            await loadNFTData();
+            setLoading(false);
+            return;
+          }
+        }
+        throw new Error("Backend unavailable or no token");
       } catch (err) {
-        setError("Failed to load profile");
-      } finally {
-        setLoading(false);
+        console.warn("⚠️ Backend profile fetch failed, falling back to blockchain:", err?.message || err);
+
+        // Blockchain fallback
+        try {
+          const touristId = localStorage.getItem("touristId");
+          if (!touristId) throw new Error("No touristId in localStorage");
+
+          const result = await touristService.getTouristProfile(touristId);
+          const profile = result?.profile || result; // support both shapes
+          const mapped = mapBlockchainProfileToUser(profile);
+
+          if (!mapped) throw new Error("Empty profile from blockchain");
+          setUser(mapped);
+          await loadNFTData();
+          setLoading(false);
+          return;
+        } catch (chainErr) {
+          console.error("❌ Blockchain profile fallback failed:", chainErr?.message || chainErr);
+          setError("Failed to load profile");
+          setLoading(false);
+        }
       }
     }
     fetchProfile();
   }, []);
+
+  const loadNFTData = async () => {
+    try {
+      // Try to get NFT data from localStorage first
+      const storedNFT = localStorage.getItem('touristNFT');
+      const digitalId = localStorage.getItem('digitalId');
+      const touristId = localStorage.getItem('touristId');
+
+      if (storedNFT) {
+        setNftData(JSON.parse(storedNFT));
+      } else if (digitalId && touristId) {
+        // If no stored NFT but we have IDs, try to recreate it
+        console.log('🔄 No stored NFT found, attempting to recreate...');
+        setLoadingNFT(true);
+        
+        // This would typically fetch from blockchain, but for now we'll create a placeholder
+        const placeholderNFT = {
+          qrCode: null,
+          digitalId: digitalId,
+          ipfsUrl: `https://ipfs.io/ipfs/placeholder_${digitalId}`,
+          message: 'NFT data not available - please re-register to generate NFT'
+        };
+        
+        setNftData(placeholderNFT);
+        setLoadingNFT(false);
+      }
+    } catch (error) {
+      console.error('❌ Failed to load NFT data:', error);
+      setLoadingNFT(false);
+    }
+  };
+
+  const handleRegenerateNFT = async () => {
+    if (!user) return;
+
+    try {
+      setLoadingNFT(true);
+      console.log('🎨 Regenerating NFT for user...');
+
+      // Create mock user data for NFT generation
+      const userData = {
+        name: `${user.personal_info?.first_name || ''} ${user.personal_info?.last_name || ''}`.trim(),
+        email: user.contact?.email || user.email,
+        phone: user.contact?.phone_number || user.phone,
+        nationality: user.personal_info?.nationality || 'Indian',
+        digitalId: localStorage.getItem('digitalId') || `regenerated_${Date.now()}`
+      };
+
+      const result = await touristService.registerTourist(userData);
+      
+      if (result.nft) {
+        setNftData({
+          qrCode: result.nft.qrCode,
+          digitalId: result.digitalId,
+          ipfsUrl: result.nft.ipfsUrl,
+          ipfsHash: result.nft.ipfsHash
+        });
+
+        // Store NFT data
+        localStorage.setItem('touristNFT', JSON.stringify(result.nft));
+        localStorage.setItem('digitalId', result.digitalId);
+      }
+
+    } catch (error) {
+      console.error('❌ NFT regeneration failed:', error);
+      alert('Failed to regenerate NFT. Please try again.');
+    } finally {
+      setLoadingNFT(false);
+    }
+  };
+
+  // Removed duplicate profile fetch effect to avoid double requests and errors
 
   if (loading)
     return <div className="text-white text-center mt-20">Loading...</div>;
@@ -77,7 +246,8 @@ const Profile = () => {
               </h2>
               <p className="text-gray-400">{personal_info?.nationality}</p>
               <p className="text-sm text-gray-300">
-                {personal_info?.contact?.email} • {personal_info?.contact?.phone_number}
+                {(user?.contact?.email || personal_info?.contact?.email || '')}
+                { (user?.contact?.phone_number || personal_info?.contact?.phone_number) ? ` • ${user?.contact?.phone_number || personal_info?.contact?.phone_number}` : ''}
               </p>
             </div>
           </div>
@@ -116,16 +286,69 @@ const Profile = () => {
           </ProfileSection>
         </div>
 
-        {/* Right: QR Code Placeholder */}
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 flex flex-col items-center justify-top shadow-xl">
-          <h3 className="text-xl font-semibold text-white mb-4">My QR Code</h3>
-          <div className="w-64 h-64 bg-gray-800 rounded-xl flex items-center justify-center text-gray-500">
-            {/* Replace this div with actual QR component */}
-            QR Code Here
+        {/* Right: Digital Identity NFT QR Code */}
+        <div className="space-y-6">
+          {/* QR Code Display */}
+          <QRCodeDisplay
+            qrCodeUrl={nftData?.qrCode}
+            digitalId={nftData?.digitalId || localStorage.getItem('digitalId')}
+            ipfsUrl={nftData?.ipfsUrl && nftData?.ipfsUrl.startsWith('http') ? nftData.ipfsUrl : undefined}
+            touristName={`${personal_info?.first_name || ''} ${personal_info?.last_name || ''}`.trim()}
+          />
+
+          {/* NFT Actions */}
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-white mb-4">🎫 NFT Actions</h3>
+            
+            {loadingNFT ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                <p className="text-gray-400 text-sm">Processing NFT...</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {!nftData?.qrCode && (
+                  <button
+                    onClick={handleRegenerateNFT}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-4 rounded-lg font-medium transition-all transform hover:scale-105"
+                  >
+                    🎨 Generate NFT
+                  </button>
+                )}
+                
+                {nftData?.ipfsUrl && (
+                  <a
+                    href={nftData.ipfsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium transition-colors block text-center"
+                  >
+                    🌐 View on IPFS
+                  </a>
+                )}
+
+                <div className="bg-gray-800/50 rounded-lg p-3">
+                  <p className="text-gray-400 text-xs mb-2">Digital Identity Status:</p>
+                  {(nftData?.ipfsHash || (nftData?.ipfsUrl && nftData?.qrCode)) ? (
+                    <p className="text-green-400 text-sm">✅ NFT Created</p>
+                  ) : (
+                    <p className="text-yellow-400 text-sm">⏳ NFT Pending</p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-          <p className="text-gray-400 text-sm mt-4 text-center">
-            Scan to view complete profile
-          </p>
+
+          {/* Security Info */}
+          <div className="bg-amber-900/20 border border-amber-500/30 rounded-xl p-4">
+            <h4 className="text-amber-200 font-semibold mb-2 flex items-center">
+              🔒 Security Notice
+            </h4>
+            <p className="text-amber-100 text-sm">
+              Your NFT contains verified identity data stored on blockchain. 
+              This QR code proves your registration authenticity.
+            </p>
+          </div>
         </div>
       </motion.div>
     </div>

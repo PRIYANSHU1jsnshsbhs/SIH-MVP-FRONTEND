@@ -7,6 +7,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
 const authRoutes = require("./routes/auth");
+const ipfsRoutes = require("./routes/ipfs");
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use(cookieParser());
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/ipfs", ipfsRoutes);
 
 // Health check route
 app.get("/", (req, res) => {

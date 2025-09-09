@@ -95,7 +95,11 @@ exports.register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ name, email, phone, password: hashedPassword });
     await user.save();
-    res.status(201).json({ message: "User registered successfully." });
+    // Auto-generate a token so the client can call /me and /complete-profile immediately
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
+    res.status(201).json({ message: "User registered successfully.", token });
   } catch (err) {
     res.status(500).json({ message: "Server error." });
   }

@@ -178,23 +178,63 @@ export default function Map({ activeItem, route, isNavigating, showRiskyAreas, s
       style: currentStyle,
       center: [78.9629, 20.5937],
       zoom: 5,
-      pitch: 45,
+      pitch: 35,
       attributionControl: false,
       accessToken: MAPBOX_TOKEN
     })
 
     map.current.on('load', () => {
-      // Add terrain source only if it doesn't exist
+      // Terrain setup (fixed): use style terrain source if available; else add DEM
       try {
-        if (!map.current.getSource('mapbox-dem')) {
-          map.current.addSource('mapbox-dem', {
-            type: 'raster-dem',
-            url: 'mapbox://mapbox.terrain-rgb',
-            tileSize: 512,
-            maxzoom: 14
-          })
+        const style = map.current.getStyle()
+        const existingTerrainSource = style?.terrain?.source
+
+        // Reset any existing terrain to avoid inheriting extreme exaggeration
+        try { map.current.setTerrain(null) } catch {}
+
+        if (existingTerrainSource) {
+          // Reuse style terrain source to prevent conflicts/double-DEM
+          map.current.setTerrain({ source: existingTerrainSource, exaggeration: 1.1 })
+        } else {
+          if (!map.current.getSource('mapbox-dem')) {
+            map.current.addSource('mapbox-dem', {
+              type: 'raster-dem',
+              url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+              tileSize: 512,
+              maxzoom: 14
+            })
+          }
+          // Use a realistic exaggeration to avoid distorted elevation
+          map.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.1 })
         }
-        map.current.setTerrain({ source: 'mapbox-dem', exaggeration: 200 })
+
+        // Add hillshade for clearer relief if not already present
+    if (!style?.layers?.some(l => l.type === 'hillshade') && !map.current.getLayer('hillshade')) {
+          try {
+            map.current.addLayer({
+              id: 'hillshade',
+              type: 'hillshade',
+      source: style?.terrain?.source || 'mapbox-dem',
+              paint: {
+                'hillshade-exaggeration': 0.7
+              }
+            }, undefined)
+          } catch (e) {
+            // Some styles may not support hillshade; safe to ignore
+          }
+        }
+
+        // Adjust terrain exaggeration smoothly based on zoom
+    const updateTerrainExaggeration = () => {
+          try {
+            const z = map.current.getZoom()
+      const ex = z < 5 ? 0.9 : z < 7 ? 1.0 : z < 10 ? 1.1 : 1.2
+      const src = map.current.getStyle()?.terrain?.source || 'mapbox-dem'
+      map.current.setTerrain({ source: src, exaggeration: ex })
+          } catch {}
+        }
+        updateTerrainExaggeration()
+        map.current.on('zoom', updateTerrainExaggeration)
       } catch (error) {
         console.log('Terrain not available in this style')
       }
@@ -274,17 +314,49 @@ export default function Map({ activeItem, route, isNavigating, showRiskyAreas, s
       map.current.once('styledata', () => {
         console.log('✅ Style loaded successfully')
         
-        // Re-add terrain and buildings after style change
+        // Re-add terrain and buildings after style change (fixed exaggeration)
         try {
-          if (!map.current.getSource('mapbox-dem')) {
-            map.current.addSource('mapbox-dem', {
-              type: 'raster-dem',
-              url: 'mapbox://mapbox.terrain-rgb',
-              tileSize: 512,
-              maxzoom: 14
-            })
+          const style = map.current.getStyle()
+          const existingTerrainSource = style?.terrain?.source
+
+          // Reset previous terrain first
+          try { map.current.setTerrain(null) } catch {}
+
+          if (existingTerrainSource) {
+            map.current.setTerrain({ source: existingTerrainSource, exaggeration: 1.1 })
+          } else {
+            if (!map.current.getSource('mapbox-dem')) {
+              map.current.addSource('mapbox-dem', {
+                type: 'raster-dem',
+                url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+                tileSize: 512,
+                maxzoom: 14
+              })
+            }
+            map.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.1 })
           }
-          map.current.setTerrain({ source: 'mapbox-dem', exaggeration: 200 })
+
+          if (!style?.layers?.some(l => l.type === 'hillshade') && !map.current.getLayer('hillshade')) {
+            try {
+              map.current.addLayer({
+                id: 'hillshade',
+                type: 'hillshade',
+                source: existingTerrainSource || 'mapbox-dem',
+                paint: { 'hillshade-exaggeration': 0.7 }
+              }, undefined)
+            } catch (e) {}
+          }
+
+          const updateTerrainExaggeration = () => {
+            try {
+              const z = map.current.getZoom()
+              const ex = z < 5 ? 0.9 : z < 7 ? 1.0 : z < 10 ? 1.1 : 1.2
+              const src = map.current.getStyle()?.terrain?.source || 'mapbox-dem'
+              map.current.setTerrain({ source: src, exaggeration: ex })
+            } catch {}
+          }
+          updateTerrainExaggeration()
+          map.current.on('zoom', updateTerrainExaggeration)
         } catch (error) {
           console.log('Terrain not available in this style')
         }

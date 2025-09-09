@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
+import { touristService } from '../services/touristService.js';
 
 const initialState = {
   personal_info: {
@@ -59,7 +60,30 @@ const CompleteYourProfile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [blockchainStatus, setBlockchainStatus] = useState('checking');
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get user data from navigation state or localStorage
+  const userData = location.state || {
+    userId: localStorage.getItem('touristId'),
+    email: localStorage.getItem('userEmail'),
+    name: localStorage.getItem('userName'),
+    fromSignup: false
+  };
+
+  // Check blockchain status on component mount
+  useEffect(() => {
+    const checkBlockchain = async () => {
+      try {
+        const status = await touristService.checkBlockchainStatus();
+        setBlockchainStatus(status ? 'connected' : 'disconnected');
+      } catch (error) {
+        setBlockchainStatus('disconnected');
+      }
+    };
+    checkBlockchain();
+  }, []);
 
   const handleChange = (e, path) => {
     const value = e.target.value;
@@ -79,20 +103,99 @@ const CompleteYourProfile = () => {
     setLoading(true);
     setError("");
     setSuccess("");
+    
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post(
-        "http://localhost:8080/api/auth/complete-profile",
-        { ...form },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
+      console.log('🌟 Completing tourist profile on blockchain...', form);
+
+      // If coming from signup, we need to merge the basic info with profile data
+      if (userData.fromSignup) {
+        // Register with complete profile data on blockchain
+        const blockchainResult = await touristService.registerTourist({
+          name: userData.name,
+          email: userData.email,
+          phone: userData.phone // This might not be available, that's ok
+        }, form);
+
+        console.log('✅ Complete profile registered on blockchain:', blockchainResult);
+
+        // Update localStorage with new info
+        localStorage.setItem('touristId', blockchainResult.touristId);
+        localStorage.setItem('digitalId', blockchainResult.digitalId);
+        localStorage.setItem('profileCompleted', 'true');
+        // Persist the submitted profile data for Profile page fallback
+        try {
+          localStorage.setItem('submittedProfile', JSON.stringify(form));
+        } catch {}
+
+        // Store NFT data if available
+        if (blockchainResult.nft) {
+          localStorage.setItem('touristNFT', JSON.stringify(blockchainResult.nft));
+          console.log('💾 Complete profile NFT data stored');
         }
-      );
-      setSuccess(res.data.message);
-      setTimeout(() => navigate("/"), 1200);
-    } catch (err) {
-      setError(err.response?.data?.message || "Profile update failed");
+
+        setSuccess(`Profile completed successfully! Your Digital ID: ${blockchainResult.digitalId}${blockchainResult.nft ? ' • NFT Updated!' : ''}`);
+
+      } else {
+        // Update existing tourist profile
+        const touristId = userData.userId || localStorage.getItem('touristId');
+        if (!touristId) {
+          throw new Error('No tourist ID found. Please sign up again.');
+        }
+
+        const updateResult = await touristService.updateTouristProfile(touristId, form);
+        console.log('✅ Profile updated on blockchain:', updateResult);
+
+        // Set profile completed flag for existing users too
+        localStorage.setItem('profileCompleted', 'true');
+        // Persist the submitted profile data for Profile page fallback
+        try {
+          localStorage.setItem('submittedProfile', JSON.stringify(form));
+        } catch {}
+
+        setSuccess('Profile updated successfully!');
+      }
+
+      console.log('🔄 About to navigate to profile page...');
+
+      // Also try to update traditional backend (optional fallback)
+      try {
+        const token = localStorage.getItem("token");
+        await axios.post(
+          "http://localhost:8080/api/auth/complete-profile",
+          { ...form },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          }
+        );
+        console.log('📄 Traditional backend profile update also completed');
+      } catch (backendError) {
+        console.warn('⚠️ Traditional backend profile update failed (continuing with blockchain only):', backendError.message);
+      }
+
+      // Navigate to map/dashboard after 2 seconds
+      setTimeout(() => {
+        console.log('🚀 Navigating to map dashboard now...');
+        console.log('📍 Profile completed flag:', localStorage.getItem('profileCompleted'));
+        
+        // Force page reload to refresh auth state and navigate to dashboard
+        window.location.href = '/dashboard';
+      }, 2000);
+
+    } catch (error) {
+      console.error('❌ Profile completion failed:', error);
+      
+      let errorMessage = 'Profile update failed. Please try again.';
+      
+      if (error.message.includes('tourist ID')) {
+        errorMessage = 'Session expired. Please sign up again.';
+      } else if (error.message.includes('Blockchain')) {
+        errorMessage = 'Blockchain update failed. Please try again or contact support.';
+      } else {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -131,9 +234,32 @@ const CompleteYourProfile = () => {
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="w-full max-w-4xl p-8 rounded-2xl shadow-2xl bg-white/10 backdrop-blur-xl border border-white/20 relative"
       >
-        <h2 className="text-3xl font-bold text-white mb-6 text-center">
+        <h2 className="text-3xl font-bold text-white mb-4 text-center">
           Complete Your Profile
         </h2>
+
+        {/* Blockchain Status Indicator */}
+        <div className="flex items-center justify-center space-x-2 text-sm mb-6">
+          <div className={`w-2 h-2 rounded-full ${
+            blockchainStatus === 'connected' ? 'bg-green-500' : 
+            blockchainStatus === 'disconnected' ? 'bg-red-500' : 'bg-yellow-500'
+          }`}></div>
+          <span className="text-gray-400">
+            Blockchain: {
+              blockchainStatus === 'connected' ? '🔗 Connected' : 
+              blockchainStatus === 'disconnected' ? '❌ Disconnected (Mock Mode)' : '⏳ Checking...'
+            }
+          </span>
+        </div>
+
+        {/* User Context Info */}
+        {userData.fromSignup && (
+          <div className="bg-blue-500/20 border border-blue-400/30 rounded-lg p-3 mb-6">
+            <p className="text-blue-200 text-sm text-center">
+              👋 Welcome {userData.name}! Complete your profile to finish blockchain registration.
+            </p>
+          </div>
+        )}
 
         <form
           onSubmit={handleSubmit}
