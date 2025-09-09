@@ -25,20 +25,23 @@ const QRCodeDisplay = ({
   };
 
   const handleShare = async () => {
+    // Prefer IPFS URL for sharing, fallback to verification URL
+    const shareUrl = ipfsUrl || `${window.location.origin}/verify/${digitalId}`;
+    
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'My Tourist Digital Identity',
-          text: `Check out my verified tourist NFT: ${digitalId}`,
-          url: ipfsUrl
+          title: 'My Tourist Digital Identity NFT',
+          text: `View my verified tourist NFT metadata: ${digitalId}`,
+          url: shareUrl
         });
       } catch (error) {
         console.log('Share cancelled or failed:', error);
       }
     } else {
-      // Fallback - copy to clipboard
-      navigator.clipboard.writeText(ipfsUrl).then(() => {
-        alert('NFT link copied to clipboard!');
+      // Fallback - copy IPFS or verification URL to clipboard
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert(ipfsUrl ? 'NFT IPFS link copied to clipboard!' : 'Verification link copied to clipboard!');
       });
     }
   };

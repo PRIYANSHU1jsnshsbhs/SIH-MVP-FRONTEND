@@ -105,15 +105,33 @@ const CompleteYourProfile = () => {
     setSuccess("");
     
     try {
-      console.log('🌟 Completing tourist profile on blockchain...', form);
+      console.log('🌟 Completing tourist profile...', form);
+
+      // Save profile data to backend first
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          console.log('💾 Saving profile to backend...');
+          const backendResponse = await axios.post(
+            'http://localhost:8080/api/auth/complete-profile',
+            form,
+            {
+              headers: { Authorization: `Bearer ${token}` }
+            }
+          );
+          console.log('✅ Profile saved to backend:', backendResponse.data);
+        } catch (backendError) {
+          console.warn('⚠️ Backend save failed (continuing with blockchain):', backendError);
+        }
+      }
 
       // If coming from signup, we need to merge the basic info with profile data
       if (userData.fromSignup) {
         // Register with complete profile data on blockchain
         const blockchainResult = await touristService.registerTourist({
           name: userData.name,
-          email: userData.email,
-          phone: userData.phone // This might not be available, that's ok
+          email: userData.email || form.personal_info.contact.email,
+          phone: userData.phone || form.personal_info.contact.phone_number
         }, form);
 
         console.log('✅ Complete profile registered on blockchain:', blockchainResult);
@@ -122,6 +140,7 @@ const CompleteYourProfile = () => {
         localStorage.setItem('touristId', blockchainResult.touristId);
         localStorage.setItem('digitalId', blockchainResult.digitalId);
         localStorage.setItem('profileCompleted', 'true');
+        
         // Persist the submitted profile data for Profile page fallback
         try {
           localStorage.setItem('submittedProfile', JSON.stringify(form));
@@ -133,7 +152,7 @@ const CompleteYourProfile = () => {
           console.log('💾 Complete profile NFT data stored');
         }
 
-        setSuccess(`Profile completed successfully! Your Digital ID: ${blockchainResult.digitalId}${blockchainResult.nft ? ' • NFT Updated!' : ''}`);
+        setSuccess(`Profile completed successfully! Your Digital ID: ${blockchainResult.digitalId}${blockchainResult.nft ? ' • NFT Created!' : ''}`);
 
       } else {
         // Update existing tourist profile
@@ -147,6 +166,7 @@ const CompleteYourProfile = () => {
 
         // Set profile completed flag for existing users too
         localStorage.setItem('profileCompleted', 'true');
+        
         // Persist the submitted profile data for Profile page fallback
         try {
           localStorage.setItem('submittedProfile', JSON.stringify(form));

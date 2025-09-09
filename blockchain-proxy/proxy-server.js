@@ -8,9 +8,30 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const FabricService = require('./fabricService');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Initialize Fabric service
+const fabricService = new FabricService();
+let blockchainReady = false;
+
+// Initialize blockchain connection on startup
+(async () => {
+  try {
+    blockchainReady = await fabricService.initialize();
+    if (blockchainReady) {
+      console.log('🔗 Real blockchain integration active');
+    } else {
+      console.log('📝 Running in mock mode - blockchain unavailable');
+    }
+  } catch (error) {
+    console.error('❌ Blockchain initialization failed:', error);
+    console.log('📝 Running in mock mode');
+    blockchainReady = false;
+  }
+})();
 
 // Middleware
 app.use(helmet());
@@ -23,14 +44,16 @@ app.use(express.json());
 
 // Health check endpoint
 app.get('/api/blockchain/health', (req, res) => {
+  const fabricStatus = fabricService.getStatus();
   res.json({
     status: 'healthy',
     service: 'blockchain-proxy',
     timestamp: new Date().toISOString(),
     blockchain: {
-      connected: false, // Set to true when real blockchain is connected
-      network: 'development',
-      chaincode: 'tourist-safety'
+      connected: blockchainReady,
+      network: blockchainReady ? 'hyperledger-fabric' : 'mock',
+      chaincode: 'tourist-safety',
+      ...fabricStatus
     }
   });
 });

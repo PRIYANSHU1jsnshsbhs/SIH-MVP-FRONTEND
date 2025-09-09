@@ -243,47 +243,61 @@ class TouristService {
    */
   mergeUserData(userData, profileData) {
     if (!profileData) {
-      // Only basic signup data
+      // Only basic signup data - create proper structure for NFT generation
       return {
-        first_name: userData.name?.split(' ')[0] || userData.first_name,
-        last_name: userData.name?.split(' ').slice(1).join(' ') || userData.last_name || '',
+        name: userData.name,
         email: userData.email,
         phone: userData.phone || userData.phone_number,
-        nationality: 'Indian' // Default
+        personal_info: {
+          first_name: userData.name?.split(' ')[0] || '',
+          last_name: userData.name?.split(' ').slice(1).join(' ') || '',
+          nationality: 'Indian',
+          contact: {
+            email: userData.email,
+            phone_number: userData.phone || userData.phone_number
+          }
+        },
+        documents: {},
+        addresses: {},
+        emergency_contact: {},
+        travel_details: {}
       };
     }
 
-    // Merge both datasets
-    return {
-      // Basic info from signup
-      first_name: userData.name?.split(' ')[0] || userData.first_name || profileData.personal_info?.first_name,
-      last_name: userData.name?.split(' ').slice(1).join(' ') || userData.last_name || profileData.personal_info?.last_name,
-      email: userData.email || profileData.contact?.email,
-      phone: userData.phone || userData.phone_number || profileData.contact?.phone_number,
+    // Merge both datasets while preserving the nested structure for NFT generation
+    const mergedData = {
+      // Basic signup info
+      name: userData.name,
+      email: userData.email || profileData.personal_info?.contact?.email,
+      phone: userData.phone || profileData.personal_info?.contact?.phone_number,
       
-      // Extended info from profile
-      nationality: profileData.personal_info?.nationality || 'Indian',
-      date_of_birth: profileData.personal_info?.date_of_birth,
-      gender: profileData.personal_info?.gender,
-      occupation: profileData.personal_info?.occupation,
+      // Preserve complete profile structure for NFT metadata
+      personal_info: {
+        first_name: profileData.personal_info?.first_name || userData.name?.split(' ')[0] || '',
+        last_name: profileData.personal_info?.last_name || userData.name?.split(' ').slice(1).join(' ') || '',
+        dob: profileData.personal_info?.dob,
+        gender: profileData.personal_info?.gender,
+        nationality: profileData.personal_info?.nationality || 'Indian',
+        contact: {
+          email: profileData.personal_info?.contact?.email || userData.email,
+          phone_number: profileData.personal_info?.contact?.phone_number || userData.phone
+        }
+      },
       
-      // Document info
-      passport: profileData.documents?.passport,
-      aadhaar: profileData.documents?.aadhaar,
+      // Complete nested structures for NFT metadata
+      documents: profileData.documents || {},
+      addresses: profileData.addresses || {},
+      emergency_contact: profileData.emergency_contact || {},
+      travel_details: profileData.travel_details || {},
       
-      // Address info
-      permanent_address: profileData.addresses?.permanent,
-      current_address: profileData.addresses?.current,
-      
-      // Emergency contact
-      emergency_contact: profileData.emergency_contact,
-      
-      // Travel details
-      travel_details: profileData.travel_details,
-      
-      // Contact info
-      contact: profileData.contact
+      // Additional fields for backwards compatibility
+      first_name: profileData.personal_info?.first_name || userData.name?.split(' ')[0] || '',
+      last_name: profileData.personal_info?.last_name || userData.name?.split(' ').slice(1).join(' ') || '',
+      nationality: profileData.personal_info?.nationality || 'Indian'
     };
+
+    console.log('🔄 Merged user data for NFT generation:', JSON.stringify(mergedData, null, 2));
+    return mergedData;
   }
 
   /**

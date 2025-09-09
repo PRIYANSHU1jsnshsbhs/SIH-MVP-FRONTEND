@@ -27,7 +27,7 @@ print_error() {
 }
 
 # Check if we're in the right directory
-if [ ! -d "fabric-samples/test-network" ]; then
+if [ ! -d "fabric-samples/fabric-samples/test-network" ]; then
     print_error "Please run this script from the SIH-MVP-FRONTEND directory"
     exit 1
 fi

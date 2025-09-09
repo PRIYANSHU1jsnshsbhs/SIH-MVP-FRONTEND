@@ -8,6 +8,7 @@ const cookieParser = require("cookie-parser");
 
 const authRoutes = require("./routes/auth");
 const ipfsRoutes = require("./routes/ipfs");
+const nftRoutes = require("./routes/nft");
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use(cookieParser());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/ipfs", ipfsRoutes);
+app.use("/api/nft", nftRoutes);
 
 // Health check route
 app.get("/", (req, res) => {

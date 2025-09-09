@@ -31,6 +31,8 @@ const Profile = () => {
               first_name: p?.personal_info?.first_name || '',
               last_name: p?.personal_info?.last_name || '',
               nationality: p?.personal_info?.nationality || '',
+              dob: p?.personal_info?.dob || '',
+              gender: p?.personal_info?.gender || '',
               contact: p?.contact || p?.personal_info?.contact
             },
             contact: p?.contact || p?.personal_info?.contact,
@@ -40,11 +42,14 @@ const Profile = () => {
             travel_details: p?.travel_details || {},
             digitalId: digitalIdLS
           };
+          console.log('📱 Setting user from localStorage submittedProfile:', immediateUser);
           setUser(immediateUser);
           await loadNFTData();
           // Continue to refresh from backend or blockchain below
         }
-      } catch {}
+      } catch (err) {
+        console.warn('⚠️ Failed to load from localStorage:', err);
+      }
 
       // Helper: map blockchain profile to UI shape expected by this component
       const mapBlockchainProfileToUser = (profile) => {
@@ -85,18 +90,26 @@ const Profile = () => {
         };
       };
 
-  try {
+      try {
         // Try traditional backend first
         if (token) {
+          console.log('🌐 Fetching profile from backend with token:', token?.substring(0, 20) + '...');
           const res = await axios.get("http://localhost:8080/api/auth/me", {
             headers: { Authorization: `Bearer ${token}` },
           });
+          console.log('📊 Backend response status:', res?.status);
+          console.log('📊 Backend response data:', res?.data);
           if (res?.data?.user) {
+            console.log('✅ Setting user from backend:', res.data.user);
             setUser(res.data.user);
             await loadNFTData();
             setLoading(false);
             return;
+          } else {
+            console.warn('⚠️ Backend response missing user data');
           }
+        } else {
+          console.warn('⚠️ No authentication token found');
         }
         throw new Error("Backend unavailable or no token");
       } catch (err) {
@@ -134,7 +147,9 @@ const Profile = () => {
       const touristId = localStorage.getItem('touristId');
 
       if (storedNFT) {
-        setNftData(JSON.parse(storedNFT));
+        const parsedNFT = JSON.parse(storedNFT);
+        console.log('📱 Loaded NFT data from localStorage:', parsedNFT);
+        setNftData(parsedNFT);
       } else if (digitalId && touristId) {
         // If no stored NFT but we have IDs, try to recreate it
         console.log('🔄 No stored NFT found, attempting to recreate...');
@@ -155,9 +170,7 @@ const Profile = () => {
       console.error('❌ Failed to load NFT data:', error);
       setLoadingNFT(false);
     }
-  };
-
-  const handleRegenerateNFT = async () => {
+  };  const handleRegenerateNFT = async () => {
     if (!user) return;
 
     try {
@@ -176,15 +189,17 @@ const Profile = () => {
       const result = await touristService.registerTourist(userData);
       
       if (result.nft) {
-        setNftData({
-          qrCode: result.nft.qrCode,
+        const nftData = {
+          qrCode: result.nft.qrCodeUrl || result.nft.qrCode,
           digitalId: result.digitalId,
           ipfsUrl: result.nft.ipfsUrl,
           ipfsHash: result.nft.ipfsHash
-        });
+        };
+
+        setNftData(nftData);
 
         // Store NFT data
-        localStorage.setItem('touristNFT', JSON.stringify(result.nft));
+        localStorage.setItem('touristNFT', JSON.stringify(nftData));
         localStorage.setItem('digitalId', result.digitalId);
       }
 
@@ -292,7 +307,7 @@ const Profile = () => {
           <QRCodeDisplay
             qrCodeUrl={nftData?.qrCode}
             digitalId={nftData?.digitalId || localStorage.getItem('digitalId')}
-            ipfsUrl={nftData?.ipfsUrl && nftData?.ipfsUrl.startsWith('http') ? nftData.ipfsUrl : undefined}
+            ipfsUrl={nftData?.ipfsUrl}
             touristName={`${personal_info?.first_name || ''} ${personal_info?.last_name || ''}`.trim()}
           />
 

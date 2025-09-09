@@ -1,6 +1,5 @@
-'use strict';
+"use strict";
 
-const TouristSafetyContract = require('./lib/touristSafetyContract');
+const TouristSafetyContract = require("./lib/contract");
 
-module.exports.TouristSafetyContract = TouristSafetyContract;
 module.exports.contracts = [TouristSafetyContract];
