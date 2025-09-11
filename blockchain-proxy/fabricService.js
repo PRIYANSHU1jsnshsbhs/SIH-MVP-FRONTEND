@@ -11,7 +11,7 @@ const path = require('path');
 class FabricService {
   constructor() {
     this.channelName = 'mychannel';
-    this.chaincodeName = 'tourist-safety';
+    this.chaincodeName = 'basic';
     this.gateway = null;
     this.network = null;
     this.contract = null;
@@ -46,7 +46,7 @@ class FabricService {
       await gateway.connect(connectionProfile, {
         wallet,
         identity: 'admin',
-        discovery: { enabled: true, asLocalhost: true }
+        discovery: { enabled: false, asLocalhost: true }
       });
 
       this.gateway = gateway;
@@ -126,10 +126,7 @@ class FabricService {
       },
       peers: {
         'peer0.org1.example.com': {
-          url: 'grpcs://localhost:7051',
-          tlsCACerts: {
-            pem: this.getTLSCACert()
-          },
+          url: 'grpc://localhost:7051',
           grpcOptions: {
             'ssl-target-name-override': 'peer0.org1.example.com',
             'hostnameOverride': 'peer0.org1.example.com'
