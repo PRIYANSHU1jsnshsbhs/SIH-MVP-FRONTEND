@@ -24,6 +24,6 @@ router.post(
   authMiddleware,
   authController.completeProfile
 );
-router.get("/me", authMiddleware, authController.getMe);
+router.get("/me", authController.getMe);
 
 module.exports = router;

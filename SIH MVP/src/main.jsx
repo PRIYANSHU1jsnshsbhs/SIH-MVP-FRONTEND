@@ -8,11 +8,16 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import CompleteYourProfile from "./pages/CompleteYourProfile.jsx";
 import { useAuthGuard } from "./hooks/useAuthGuard";
 import Profile from "./pages/Profile.jsx";
+import Airport from "./dashboard/Airport.jsx";
+import Hotel from "./dashboard/Hotel.jsx";
+import Tourism from "./dashboard/Tourism.jsx";
+import Embassy from "./dashboard/Embassy.jsx";
+import Police from "./dashboard/Police.jsx";
 
 function ProtectedRoutes() {
-  const { checking } = useAuthGuard();
-  if (checking)
-    return <div className="text-white text-center mt-20">Loading...</div>;
+  // const { checking } = useAuthGuard();
+  // if (checking)
+  //   return <div className="text-white text-center mt-20">Loading...</div>;
   return (
     <Routes>
       <Route path="/" element={<App />} />
@@ -20,6 +25,11 @@ function ProtectedRoutes() {
       <Route path="/signup" element={<Signin />} />
       <Route path="/complete-your-profile" element={<CompleteYourProfile />} />
       <Route path="/profile" element={<Profile />} />
+        <Route path="/airport" element={<Airport />} />
+        <Route path="/hotel" element={<Hotel />} />
+        <Route path="/tourism" element={<Tourism />} />
+        <Route path="/embassy" element={<Embassy />} />
+        <Route path="/police" element={<Police />} />
     </Routes>
   );
 }
