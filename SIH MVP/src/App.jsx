@@ -1,122 +1,141 @@
-import { useState } from "react"
-import Sidebar from "./components/Sidebar"
-import Map from "./components/Map"
+import { useState, useEffect } from "react";
+import Sidebar from "./components/Sidebar";
+import Map from "./components/Map";
+import { TriangleAlert } from "lucide-react";
 
 function App() {
-  console.log("🚀 App loading with Sidebar + Map")
+  console.log("🚀 App loading with Sidebar + Map");
 
-  const [activeItem, setActiveItem] = useState(null)
-  const [route, setRoute] = useState(null)
-  const [isNavigating, setIsNavigating] = useState(false)
-  const [showRiskyAreas, setShowRiskyAreas] = useState(false)
-  const [sidebarExpanded, setSidebarExpanded] = useState(true)
-  const [showAuthForm, setShowAuthForm] = useState(false)
-  const [authMode, setAuthMode] = useState("login") // "login" or "register"
+  const [activeItem, setActiveItem] = useState(null);
+  const [route, setRoute] = useState(null);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [showRiskyAreas, setShowRiskyAreas] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [showAuthForm, setShowAuthForm] = useState(false);
+  const [authMode, setAuthMode] = useState("login"); // "login" or "register"
   const [authData, setAuthData] = useState({
     email: "",
     password: "",
     confirmPassword: "",
-    fullName: ""
-  })
+    fullName: "",
+  });
+  const [showPPanel, setShowPPanel] = useState(false);
+  const [showFallPanel, setShowFallPanel] = useState(false);
+
+  // Toggle the panel when the user presses the 'p' key
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === "p" || e.key === "P") {
+        setShowPPanel((v) => !v);
+      }
+      if (e.key === "f" || e.key === "F") {
+        setShowFallPanel((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const handleShowAuth = () => {
-    console.log("handleShowAuth called!")
-    setShowAuthForm(true)
-  }
+    console.log("handleShowAuth called!");
+    setShowAuthForm(true);
+  };
 
   const handleCloseAuth = () => {
-    console.log("handleCloseAuth called!")
-    setShowAuthForm(false)
-    setAuthData({ email: "", password: "", confirmPassword: "", fullName: "" })
-  }
+    console.log("handleCloseAuth called!");
+    setShowAuthForm(false);
+    setAuthData({ email: "", password: "", confirmPassword: "", fullName: "" });
+  };
 
   const handleAuthInputChange = (e) => {
-    const { name, value } = e.target
-    setAuthData(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setAuthData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleAuthSubmit = (e) => {
-    e.preventDefault()
+    e.preventDefault();
     if (authMode === "register") {
       if (authData.password !== authData.confirmPassword) {
-        alert("Passwords do not match!")
-        return
+        alert("Passwords do not match!");
+        return;
       }
       if (!authData.fullName.trim()) {
-        alert("Full name is required!")
-        return
+        alert("Full name is required!");
+        return;
       }
     }
-    console.log(`${authMode} submitted:`, authData)
-    alert(`${authMode === "login" ? "Login" : "Registration"} successful!`)
-    handleCloseAuth()
-  }
+    console.log(`${authMode} submitted:`, authData);
+    alert(`${authMode === "login" ? "Login" : "Registration"} successful!`);
+    handleCloseAuth();
+  };
 
   // Search button: Only show route, do NOT start navigation
   const handleNavigationSearch = async (fromCoords, toCoords) => {
-    console.log("Navigation search from:", fromCoords, "to:", toCoords)
+    console.log("Navigation search from:", fromCoords, "to:", toCoords);
 
     try {
       // Parse coordinates
-      const [fromLat, fromLng] = fromCoords.split(",").map(Number)
-      const [toLat, toLng] = toCoords.split(",").map(Number)
+      const [fromLat, fromLng] = fromCoords.split(",").map(Number);
+      const [toLat, toLng] = toCoords.split(",").map(Number);
 
       // Get route from Mapbox Directions API
       const response = await fetch(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&access_token=${import.meta.env.VITE_MAPBOX_TOKEN}`
-      )
-      const data = await response.json()
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&access_token=${
+          import.meta.env.VITE_MAPBOX_TOKEN
+        }`
+      );
+      const data = await response.json();
 
       if (data.routes && data.routes.length > 0) {
-        const routeData = data.routes[0]
+        const routeData = data.routes[0];
         setRoute({
           coordinates: routeData.geometry.coordinates,
           routeInfo: {
             distance: routeData.distance,
-            duration: routeData.duration
-          }
-        })
-        console.log("Route displayed successfully!")
+            duration: routeData.duration,
+          },
+        });
+        console.log("Route displayed successfully!");
       } else {
-        console.error("No route found")
-        alert("No route found between the selected points")
+        console.error("No route found");
+        alert("No route found between the selected points");
       }
     } catch (error) {
-      console.error("Error fetching route:", error)
-      alert("Error calculating route")
+      console.error("Error fetching route:", error);
+      alert("Error calculating route");
     }
-  }
+  };
 
   // Start Navigation button: Start navigation if route exists
   const handleStartNavigation = () => {
-    console.log("Start Navigation clicked!")
+    console.log("Start Navigation clicked!");
     if (route) {
-      setIsNavigating(true)
-      console.log("Navigation started!")
+      setIsNavigating(true);
+      console.log("Navigation started!");
     } else {
-      alert("Please search for a route first!")
+      alert("Please search for a route first!");
     }
-  }
+  };
 
   const handleToggleRiskyAreas = () => {
-    setShowRiskyAreas(!showRiskyAreas)
-    console.log("Toggle risky areas:", !showRiskyAreas)
-  }
+    setShowRiskyAreas(!showRiskyAreas);
+    console.log("Toggle risky areas:", !showRiskyAreas);
+  };
 
   const handleStopNavigation = () => {
-    setRoute(null)
-    setIsNavigating(false)
-    console.log("Navigation stopped")
-  }
+    setRoute(null);
+    setIsNavigating(false);
+    console.log("Navigation stopped");
+  };
 
   const handleSidebarItemClick = (item) => {
-    setActiveItem(item)
-    console.log("Sidebar item clicked:", item)
-  }
+    setActiveItem(item);
+    console.log("Sidebar item clicked:", item);
+  };
 
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
-      <Sidebar 
+      <Sidebar
         onNavigationSearch={handleNavigationSearch}
         onStartNavigation={handleStartNavigation}
         onToggleRiskyAreas={handleToggleRiskyAreas}
@@ -125,7 +144,19 @@ function App() {
         onItemClick={handleSidebarItemClick}
       />
 
-      <Map 
+      {showPPanel && (
+        <div className="top-4 flex gap-4 left-1/2 transform -translate-x-1/2 bg-red-200 text-red-800 px-4 py-2 rounded shadow-lg z-10 absolute">
+          <TriangleAlert /> Warning!! Out of bounds
+        </div>
+      )}
+
+      {showFallPanel && (
+        <div className="top-4 flex gap-4 left-1/2 transform -translate-x-1/2 bg-red-200 text-red-800 px-4 py-2 rounded shadow-lg z-10 absolute">
+          <TriangleAlert /> Warning!! Fall detected
+        </div>
+      )}
+
+      <Map
         activeItem={activeItem}
         route={route}
         isNavigating={isNavigating}
@@ -135,27 +166,31 @@ function App() {
       />
 
       {showAuthForm && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          backgroundColor: "rgba(0, 0, 0, 0.6)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: "white",
-            borderRadius: "12px",
-            boxShadow: "0 20px 40px rgba(0, 0, 0, 0.3)",
-            position: "relative",
-            width: "400px",
-            maxWidth: "90vw",
-            overflow: "hidden"
-          }}>
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              borderRadius: "12px",
+              boxShadow: "0 20px 40px rgba(0, 0, 0, 0.3)",
+              position: "relative",
+              width: "400px",
+              maxWidth: "90vw",
+              overflow: "hidden",
+            }}
+          >
             {/* Close Button */}
             <button
               onClick={handleCloseAuth}
@@ -168,7 +203,7 @@ function App() {
                 fontSize: "24px",
                 cursor: "pointer",
                 color: "#666",
-                zIndex: 10
+                zIndex: 10,
               }}
             >
               ×
@@ -176,10 +211,14 @@ function App() {
 
             {/* Header with Tabs */}
             <div style={{ backgroundColor: "#f8f9fa", padding: "20px 30px 0" }}>
-              <h2 style={{ margin: "0 0 20px", fontSize: "24px", color: "#333" }}>
+              <h2
+                style={{ margin: "0 0 20px", fontSize: "24px", color: "#333" }}
+              >
                 Welcome
               </h2>
-              <div style={{ display: "flex", borderBottom: "1px solid #e0e0e0" }}>
+              <div
+                style={{ display: "flex", borderBottom: "1px solid #e0e0e0" }}
+              >
                 <button
                   onClick={() => setAuthMode("login")}
                   style={{
@@ -189,8 +228,11 @@ function App() {
                     backgroundColor: "transparent",
                     fontSize: "16px",
                     cursor: "pointer",
-                    borderBottom: authMode === "login" ? "2px solid #007bff" : "2px solid transparent",
-                    color: authMode === "login" ? "#007bff" : "#666"
+                    borderBottom:
+                      authMode === "login"
+                        ? "2px solid #007bff"
+                        : "2px solid transparent",
+                    color: authMode === "login" ? "#007bff" : "#666",
                   }}
                 >
                   Login
@@ -204,8 +246,11 @@ function App() {
                     backgroundColor: "transparent",
                     fontSize: "16px",
                     cursor: "pointer",
-                    borderBottom: authMode === "register" ? "2px solid #007bff" : "2px solid transparent",
-                    color: authMode === "register" ? "#007bff" : "#666"
+                    borderBottom:
+                      authMode === "register"
+                        ? "2px solid #007bff"
+                        : "2px solid transparent",
+                    color: authMode === "register" ? "#007bff" : "#666",
                   }}
                 >
                   Register
@@ -218,7 +263,14 @@ function App() {
               <form onSubmit={handleAuthSubmit}>
                 {authMode === "register" && (
                   <div style={{ marginBottom: "20px" }}>
-                    <label style={{ display: "block", marginBottom: "5px", color: "#333", fontSize: "14px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "5px",
+                        color: "#333",
+                        fontSize: "14px",
+                      }}
+                    >
                       Full Name
                     </label>
                     <input
@@ -233,7 +285,7 @@ function App() {
                         border: "1px solid #ddd",
                         borderRadius: "6px",
                         fontSize: "16px",
-                        boxSizing: "border-box"
+                        boxSizing: "border-box",
                       }}
                       placeholder="Enter your full name"
                     />
@@ -241,7 +293,14 @@ function App() {
                 )}
 
                 <div style={{ marginBottom: "20px" }}>
-                  <label style={{ display: "block", marginBottom: "5px", color: "#333", fontSize: "14px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "5px",
+                      color: "#333",
+                      fontSize: "14px",
+                    }}
+                  >
                     Email
                   </label>
                   <input
@@ -256,14 +315,21 @@ function App() {
                       border: "1px solid #ddd",
                       borderRadius: "6px",
                       fontSize: "16px",
-                      boxSizing: "border-box"
+                      boxSizing: "border-box",
                     }}
                     placeholder="Enter your email"
                   />
                 </div>
 
                 <div style={{ marginBottom: "20px" }}>
-                  <label style={{ display: "block", marginBottom: "5px", color: "#333", fontSize: "14px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "5px",
+                      color: "#333",
+                      fontSize: "14px",
+                    }}
+                  >
                     Password
                   </label>
                   <input
@@ -278,7 +344,7 @@ function App() {
                       border: "1px solid #ddd",
                       borderRadius: "6px",
                       fontSize: "16px",
-                      boxSizing: "border-box"
+                      boxSizing: "border-box",
                     }}
                     placeholder="Enter your password"
                   />
@@ -286,7 +352,14 @@ function App() {
 
                 {authMode === "register" && (
                   <div style={{ marginBottom: "20px" }}>
-                    <label style={{ display: "block", marginBottom: "5px", color: "#333", fontSize: "14px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "5px",
+                        color: "#333",
+                        fontSize: "14px",
+                      }}
+                    >
                       Confirm Password
                     </label>
                     <input
@@ -301,7 +374,7 @@ function App() {
                         border: "1px solid #ddd",
                         borderRadius: "6px",
                         fontSize: "16px",
-                        boxSizing: "border-box"
+                        boxSizing: "border-box",
                       }}
                       placeholder="Confirm your password"
                     />
@@ -319,7 +392,7 @@ function App() {
                     borderRadius: "6px",
                     fontSize: "16px",
                     cursor: "pointer",
-                    marginTop: "10px"
+                    marginTop: "10px",
                   }}
                 >
                   {authMode === "login" ? "Login" : "Create Account"}
@@ -328,7 +401,14 @@ function App() {
 
               {authMode === "login" && (
                 <div style={{ textAlign: "center", marginTop: "15px" }}>
-                  <a href="#" style={{ color: "#007bff", textDecoration: "none", fontSize: "14px" }}>
+                  <a
+                    href="#"
+                    style={{
+                      color: "#007bff",
+                      textDecoration: "none",
+                      fontSize: "14px",
+                    }}
+                  >
                     Forgot your password?
                   </a>
                 </div>
@@ -338,7 +418,7 @@ function App() {
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
